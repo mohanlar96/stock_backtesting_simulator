@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Stock Trading Strategy Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+       .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+       .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+       .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+       .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Advanced Stock Trading Strategy Simulator</h1>
+            <p class="mt-2 text-md text-gray-600">Backtesting with <strong class="text-green-600">Free Alpha Vantage API</strong></p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto">
+            <div class="flex flex-col md:flex-row items-start justify-between gap-6 border-b border-gray-200 pb-6">
+                <div class="w-full space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2">
+                            <label for="ticker-input" class="font-semibold text-gray-800 whitespace-nowrap">Ticker:</label>
+                            <input type="text" id="ticker-input" value="QQQ" placeholder="e.g., AAPL, MSFT" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full uppercase">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="api-key" class="font-semibold text-gray-800 whitespace-nowrap">API Key:</label>
+                            <input type="password" id="api-key" placeholder="Get free key from Alpha Vantage" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Strategy: Moving Average Crossover</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="fast-ma" class="font-medium text-sm text-gray-700">Fast MA Period</label>
+                                <input type="number" id="fast-ma" value="50" min="1" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div>
+                                <label for="slow-ma" class="font-medium text-sm text-gray-700">Slow MA Period</label>
+                                <input type="number" id="slow-ma" value="200" min="2" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Risk Management: ATR Trailing Stop</h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="atr-period" class="font-medium text-sm text-gray-700">ATR Period</label>
+                                <input type="number" id="atr-period" value="14" min="1" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div>
+                                <label for="atr-multiplier" class="font-medium text-sm text-gray-700">ATR Multiplier</label>
+                                <input type="number" id="atr-multiplier" value="3" min="0.1" step="0.1" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                     <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Position Sizing & Capital</h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="initial-capital" class="font-medium text-sm text-gray-700">Initial Capital ($)</label>
+                                <input type="number" id="initial-capital" value="100000" min="1" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div>
+                                <label for="risk-percent" class="font-medium text-sm text-gray-700">Risk Per Trade (%)</label>
+                                <input type="number" id="risk-percent" value="1" min="0.1" step="0.1" class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-800">Market Regime Filter
+                                <span class="tooltip">
+                                    <span class="ml-1 text-xs font-normal text-gray-500 cursor-pointer">(?)</span>
+                                    <span class="tooltiptext">Only enter long trades when the index is above its 200-day moving average to avoid bear markets.</span>
+                                </span>
+                            </h3>
+                            <input type="checkbox" id="regime-filter-enabled" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                            <div class="flex items-center gap-2">
+                                <label for="regime-ticker" class="font-medium text-sm text-gray-700">Index:</label>
+                                <input type="text" id="regime-ticker" value="SPY" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full uppercase">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Date Range</h3>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex items-center gap-2 flex-1">
+                                <label for="start-date" class="font-semibold text-gray-800">From:</label>
+                                <input type="date" id="start-date" value="2020-01-01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div class="flex items-center gap-2 flex-1">
+                                <label for="end-date" class="font-semibold text-gray-800">To:</label>
+                                <input type="date" id="end-date" value="2024-01-01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                 <button id="run-button" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    Run Simulation
+                </button>
+            </div>
+
+            <div id="error-message" class="hidden mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert"></div>
+
+            <div id="results-container" class="mt-6 hidden">
+                <div id="loader" class="flex flex-col justify-center items-center py-10">
+                    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
+                    <p id="loader-text" class="mt-4 text-gray-600">Fetching historical data...</p>
+                </div>
+                
+                <div id="summary" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Simulation Results</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Final Equity</p><p id="final-equity" class="text-xl font-semibold"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Net Profit</p><p id="total-profit" class="text-xl font-semibold"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Max Drawdown</p><p id="max-drawdown" class="text-xl font-semibold text-red-600"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Win Rate</p><p id="win-rate" class="text-xl font-semibold text-gray-700"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Completed Trades</p><p id="total-trades" class="text-xl font-semibold text-gray-700"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Avg. Hold Time</p><p id="avg-hold-time" class="text-xl font-semibold text-gray-700"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Profit Factor</p><p id="profit-factor" class="text-xl font-semibold text-gray-700"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center"><p class="text-sm text-gray-500">Buy & Hold Profit</p><p id="buy-hold-return" class="text-xl font-semibold"></p></div>
+                    </div>
+                </div>
+
+                <div id="trade-log-container" class="hidden mt-8">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Trade Log</h3>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                        <table class="min-w-full leading-normal">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-5 py-3">#</th><th class="px-5 py-3">Buy Date</th><th class="px-5 py-3">Buy Price</th>
+                                    <th class="px-5 py-3">Sell Date</th><th class="px-5 py-3">Sell Price</th><th class="px-5 py-3">Profit</th><th class="px-5 py-3">Hold Days</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trade-log-body" class="text-sm"></tbody>
+                        </table>
+                    </div>
+                    <div id="final-position" class="hidden mt-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+                        <p class="font-bold">Open Position</p>
+                        <p id="final-position-text"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="text-center mt-8 text-sm text-gray-500">
+            <p>Disclaimer: This is a financial simulation for educational purposes only. It does not constitute investment advice. Past performance is not indicative of future results.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- IndexedDB Caching ---
+        const DB_NAME = 'StockDataCache';
+        // FIX: Incrementing DB version forces onupgradeneeded to run for all users,
+        // ensuring the object store is created.
+        const DB_VERSION = 2;
+        const STORE_NAME = 'dailyData';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (event) => reject("IndexedDB error: " + request.error);
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    // This check prevents errors if the store already exists.
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+            });
+        }
+
+        function getCachedData(key) {
+            return new Promise((resolve, reject) => {
+                if (!db) { resolve(null); return; }
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("Error fetching from cache: " + request.error);
+            });
+        }
+
+        function setCachedData(key, value) {
+            return new Promise((resolve, reject) => {
+                 if (!db) { resolve(); return; }
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(value, key);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject("Error saving to cache: " + request.error);
+            });
+        }
+
+        // --- API & Backtesting ---
+        async function fetchDailyData(ticker, apiKey, onProgress) {
+            const cacheKey = `${ticker}_daily`;
+            let csvText = await getCachedData(cacheKey);
+
+            if (!csvText) {
+                onProgress(`Fetching daily data for ${ticker}...`);
+                const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${ticker}&outputsize=full&apikey=${apiKey}&datatype=csv`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API request failed for ${ticker}: ${response.status}`);
+                
+                csvText = await response.text();
+                if (!csvText.startsWith('timestamp,open,high,low,close,adjusted_close')) {
+                     throw new Error(`Invalid data from API for ${ticker}. Check ticker, API key, or usage limits.`);
+                }
+                await setCachedData(cacheKey, csvText);
+            } else {
+                 onProgress(`Loading daily data for ${ticker} from cache...`);
+            }
+            
+            const data = {};
+            const rows = csvText.trim().split('\n').slice(1);
+            rows.forEach(row => {
+                if (row) {
+                    const [timestamp, open, high, low, close, adjusted_close, volume] = row.split(',');
+                    data[timestamp] = {
+                        open: parseFloat(open),
+                        high: parseFloat(high),
+                        low: parseFloat(low),
+                        close: parseFloat(close),
+                        adjClose: parseFloat(adjusted_close),
+                        volume: parseInt(volume)
+                    };
+                }
+            });
+            return data;
+        }
+
+        function calculateIndicators(data, params) {
+            const dates = Object.keys(data).sort();
+            const closePrices = dates.map(date => data[date].adjClose);
+            const highPrices = dates.map(date => data[date].high);
+            const lowPrices = dates.map(date => data[date].low);
+
+            // SMAs
+            const fastMA = [];
+            const slowMA = [];
+            for (let i = 0; i < dates.length; i++) {
+                if (i >= params.slowMaPeriod - 1) {
+                    slowMA.push(closePrices.slice(i - params.slowMaPeriod + 1, i + 1).reduce((a, b) => a + b) / params.slowMaPeriod);
+                } else {
+                    slowMA.push(NaN);
+                }
+                if (i >= params.fastMaPeriod - 1) {
+                    fastMA.push(closePrices.slice(i - params.fastMaPeriod + 1, i + 1).reduce((a, b) => a + b) / params.fastMaPeriod);
+                } else {
+                    fastMA.push(NaN);
+                }
+            }
+
+            // ATR
+            const atr = [];
+            const tr = [];
+            for (let i = 1; i < dates.length; i++) {
+                const h = highPrices[i];
+                const l = lowPrices[i];
+                const pc = closePrices[i - 1];
+                tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+            }
+             // Seed the first ATR value for smoothing later (optional, but good practice)
+            let firstAtr = tr.slice(0, params.atrPeriod - 1).reduce((a, b) => a + b, 0) / (params.atrPeriod -1);
+
+            for (let i = 0; i < dates.length; i++) {
+                 if (i < params.atrPeriod -1) {
+                    atr.push(NaN);
+                    continue;
+                }
+                if (i === params.atrPeriod - 1) {
+                     atr.push(firstAtr);
+                } else {
+                    // Smoothed ATR (Wilder's Smoothing)
+                    let currentAtr = (atr[i - 1] * (params.atrPeriod - 1) + tr[i - 1]) / params.atrPeriod;
+                    atr.push(currentAtr);
+                }
+            }
+            return { dates, fastMA, slowMA, atr };
+        }
+
+        function runBacktest(stockData, regimeData, params) {
+            const { dates, fastMA, slowMA, atr } = calculateIndicators(stockData, params);
+            let regimeMA = [];
+            let regimeDates = [];
+            if (params.regimeFilterEnabled) {
+                const regimeIndicators = calculateIndicators(regimeData, { slowMaPeriod: 200, fastMaPeriod: 1, atrPeriod: 1 });
+                regimeMA = regimeIndicators.slowMA;
+                regimeDates = regimeIndicators.dates;
+            }
+
+            let cash = params.initialCapital;
+            let position = null;
+            const trades = [];
+            const equityCurve = [];
+            
+            for (let i = 1; i < dates.length; i++) {
+                const date = dates[i];
+                const dayData = stockData[date];
+
+                // --- Market Regime Filter ---
+                let isBullRegime = true;
+                if (params.regimeFilterEnabled) {
+                    const regimeDateIndex = regimeDates.indexOf(date);
+                    if (regimeDateIndex > -1 && regimeData[date] && regimeMA[regimeDateIndex]) {
+                        isBullRegime = regimeData[date].adjClose > regimeMA[regimeDateIndex];
+                    } else {
+                        isBullRegime = false; // Default to false if data is missing
+                    }
+                }
+
+                // --- Exit Logic (ATR Trailing Stop) ---
+                if (position) {
+                    position.highestHigh = Math.max(position.highestHigh, dayData.high);
+                    const newTrailingStop = position.highestHigh - (atr[i] * params.atrMultiplier);
+                    position.trailingStop = Math.max(position.trailingStop, newTrailingStop);
+
+                    if (dayData.low <= position.trailingStop) {
+                        const sellPrice = Math.min(position.trailingStop, dayData.open); // Assume exit at open or stop price
+                        const profit = (sellPrice - position.buyPrice) * position.shares;
+                        cash += sellPrice * position.shares;
+                        trades.push({
+                           ...position,
+                            sellPrice: sellPrice,
+                            sellDate: date,
+                            profit: profit
+                        });
+                        position = null;
+                    }
+                }
+
+                // --- Entry Logic (MA Crossover) ---
+                if (!position && isBullRegime) {
+                    if (fastMA[i-1] <= slowMA[i-1] && fastMA[i] > slowMA[i]) {
+                        const entryPrice = dayData.open;
+                        const initialStop = entryPrice - (atr[i] * params.atrMultiplier);
+                        const riskPerShare = entryPrice - initialStop;
+                        
+                        if (riskPerShare > 0) {
+                            const riskAmount = cash * (params.riskPercent / 100);
+                            const shares = Math.floor(riskAmount / riskPerShare);
+                            const cost = shares * entryPrice;
+
+                            if (shares > 0 && cash >= cost) {
+                                cash -= cost;
+                                position = {
+                                    buyPrice: entryPrice,
+                                    buyDate: date,
+                                    shares: shares,
+                                    trailingStop: initialStop,
+                                    highestHigh: entryPrice,
+                                };
+                            }
+                        }
+                    }
+                }
+
+                // --- Daily Equity Update ---
+                const currentEquity = cash + (position ? position.shares * dayData.adjClose : 0);
+                equityCurve.push({ date, equity: currentEquity });
+            }
+
+            return { trades, finalOpenPosition: position, equityCurve };
+        }
+
+        function displayResults(results, params, filteredStockData) {
+            const { trades, finalOpenPosition, equityCurve } = results;
+            
+            const totalProfit = trades.reduce((sum, trade) => sum + trade.profit, 0);
+            const totalTrades = trades.length;
+            const winningTrades = trades.filter(t => t.profit > 0).length;
+            const grossProfit = trades.filter(t => t.profit > 0).reduce((sum, t) => sum + t.profit, 0);
+            const grossLoss = Math.abs(trades.filter(t => t.profit < 0).reduce((sum, t) => sum + t.profit, 0));
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : 'Infinity';
+
+            let totalHoldDays = 0;
+            trades.forEach(trade => {
+                const diffTime = Math.abs(new Date(trade.sellDate) - new Date(trade.buyDate));
+                totalHoldDays += Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            });
+            const avgHoldTime = totalTrades > 0 ? (totalHoldDays / totalTrades).toFixed(1) : 'N/A';
+            const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 'N/A';
+            
+            const finalEquity = equityCurve.length > 0 ? equityCurve[equityCurve.length - 1].equity : params.initialCapital;
+            
+            // Max Drawdown Calculation
+            let peakEquity = params.initialCapital;
+            let maxDrawdown = 0;
+            equityCurve.forEach(point => {
+                peakEquity = Math.max(peakEquity, point.equity);
+                const drawdown = (peakEquity - point.equity) / peakEquity;
+                maxDrawdown = Math.max(maxDrawdown, drawdown);
+            });
+
+            // Buy & Hold Calculation
+            const datesInRange = Object.keys(filteredStockData).sort();
+            let buyHoldProfit = 0;
+            let buyHoldClassName = 'text-xl font-semibold text-gray-700';
+
+            if (datesInRange.length > 0) {
+                const startPrice = filteredStockData[datesInRange[0]].adjClose;
+                const endPrice = filteredStockData[datesInRange[datesInRange.length - 1]].adjClose;
+                
+                if (startPrice > 0) {
+                    const buyHoldEquity = (endPrice / startPrice) * params.initialCapital;
+                    buyHoldProfit = buyHoldEquity - params.initialCapital;
+                    buyHoldClassName = `text-xl font-semibold ${buyHoldProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                }
+            }
+
+            document.getElementById('final-equity').textContent = `$${finalEquity.toFixed(2)}`;
+            document.getElementById('total-profit').textContent = `$${totalProfit.toFixed(2)}`;
+            document.getElementById('total-profit').className = `text-xl font-semibold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            document.getElementById('max-drawdown').textContent = `${(maxDrawdown * 100).toFixed(2)}%`;
+            document.getElementById('win-rate').textContent = `${winRate}%`;
+            document.getElementById('total-trades').textContent = totalTrades;
+            document.getElementById('avg-hold-time').textContent = `${avgHoldTime} days`;
+            document.getElementById('profit-factor').textContent = profitFactor;
+            document.getElementById('buy-hold-return').textContent = `$${buyHoldProfit.toFixed(2)}`;
+            document.getElementById('buy-hold-return').className = buyHoldClassName;
+
+            const tradeLogBody = document.getElementById('trade-log-body');
+            tradeLogBody.innerHTML = '';
+            trades.forEach((trade, index) => {
+                const holdDays = Math.ceil(Math.abs(new Date(trade.sellDate) - new Date(trade.buyDate)) / (1000 * 60 * 60 * 24));
+                const profitClass = trade.profit >= 0 ? 'text-green-600' : 'text-red-600';
+                const row = `
+                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <td class="px-5 py-4">${index + 1}</td>
+                        <td class="px-5 py-4">${trade.buyDate}</td>
+                        <td class="px-5 py-4">$${trade.buyPrice.toFixed(2)}</td>
+                        <td class="px-5 py-4">${trade.sellDate}</td>
+                        <td class="px-5 py-4">$${trade.sellPrice.toFixed(2)}</td>
+                        <td class="px-5 py-4 font-medium ${profitClass}">$${trade.profit.toFixed(2)}</td>
+                        <td class="px-5 py-4">${holdDays}</td>
+                    </tr>`;
+                tradeLogBody.innerHTML += row;
+            });
+            
+            const finalPositionEl = document.getElementById('final-position');
+            const finalPositionText = document.getElementById('final-position-text');
+            if (finalOpenPosition) {
+                const currentPrice = filteredStockData[datesInRange[datesInRange.length - 1]].adjClose;
+                const unrealizedPnl = (currentPrice - finalOpenPosition.buyPrice) * finalOpenPosition.shares;
+                const pnlClass = unrealizedPnl >= 0 ? 'text-green-700' : 'text-red-700';
+
+                finalPositionText.innerHTML = `Simulation ended with an open position of ${finalOpenPosition.shares} shares, bought on <b>${finalOpenPosition.buyDate}</b> at <b>$${finalOpenPosition.buyPrice.toFixed(2)}</b>.
+                <br>Current unrealized P/L: <span class="font-bold ${pnlClass}">$${unrealizedPnl.toFixed(2)}</span>`;
+                finalPositionEl.classList.remove('hidden');
+            } else {
+                finalPositionEl.classList.add('hidden');
+            }
+        }
+        
+        async function runSimulation() {
+            const runButton = document.getElementById('run-button');
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loader-text');
+            const resultsContainer = document.getElementById('results-container');
+            const summary = document.getElementById('summary');
+            const tradeLogContainer = document.getElementById('trade-log-container');
+            const errorMessage = document.getElementById('error-message');
+            
+            runButton.disabled = true;
+            errorMessage.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            summary.classList.add('hidden');
+            tradeLogContainer.classList.add('hidden');
+            loader.style.display = 'flex';
+            loaderText.textContent = 'Preparing simulation...';
+
+            try {
+                await initDB();
+                const apiKey = document.getElementById('api-key').value;
+                if (!apiKey) throw new Error("Please provide an Alpha Vantage API key.");
+
+                const params = {
+                    ticker: document.getElementById('ticker-input').value.toUpperCase(),
+                    startDate: document.getElementById('start-date').value,
+                    endDate: document.getElementById('end-date').value,
+                    fastMaPeriod: parseInt(document.getElementById('fast-ma').value),
+                    slowMaPeriod: parseInt(document.getElementById('slow-ma').value),
+                    atrPeriod: parseInt(document.getElementById('atr-period').value),
+                    atrMultiplier: parseFloat(document.getElementById('atr-multiplier').value),
+                    initialCapital: parseFloat(document.getElementById('initial-capital').value),
+                    riskPercent: parseFloat(document.getElementById('risk-percent').value),
+                    regimeFilterEnabled: document.getElementById('regime-filter-enabled').checked,
+                    regimeTicker: document.getElementById('regime-ticker').value.toUpperCase()
+                };
+
+                if (!params.ticker) throw new Error("Please enter a stock ticker symbol.");
+                if (params.fastMaPeriod >= params.slowMaPeriod) throw new Error("Fast MA period must be less than Slow MA period.");
+                if (!params.startDate || !params.endDate || new Date(params.startDate) >= new Date(params.endDate)) throw new Error("The 'From' date must be before the 'To' date.");
+
+                let stockData = await fetchDailyData(params.ticker, apiKey, (progress) => loaderText.textContent = progress);
+                
+                let regimeData = {};
+                if (params.regimeFilterEnabled) {
+                    if (!params.regimeTicker) throw new Error("Please enter an index ticker for the regime filter.");
+                    // Add delay here to avoid hitting API rate limits (5 calls/min on free tier)
+                    loaderText.textContent = 'Waiting for API rate limit... (15s)';
+                    await new Promise(resolve => setTimeout(resolve, 15000));
+                    regimeData = await fetchDailyData(params.regimeTicker, apiKey, (progress) => loaderText.textContent = progress);
+                }
+
+                const filterData = (data, start, end) => Object.keys(data)
+                   .filter(date => date >= start && date <= end)
+                   .reduce((obj, key) => { obj[key] = data[key]; return obj; }, {});
+
+                const filteredStockData = filterData(stockData, params.startDate, params.endDate);
+                const filteredRegimeData = params.regimeFilterEnabled ? filterData(regimeData, params.startDate, params.endDate) : {};
+
+                if (Object.keys(filteredStockData).length === 0) {
+                    throw new Error("No data was found for the selected ticker and date range.");
+                }
+
+                loaderText.textContent = 'Running backtest...';
+                await new Promise(resolve => setTimeout(resolve, 100)); // UI update
+                
+                const backtestResults = runBacktest(filteredStockData, filteredRegimeData, params);
+                
+                displayResults(backtestResults, params, filteredStockData);
+                summary.classList.remove('hidden');
+                tradeLogContainer.classList.remove('hidden');
+
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorMessage.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+            } finally {
+                loader.style.display = 'none';
+                runButton.disabled = false;
+            }
+        }
+
+        document.getElementById('run-button').addEventListener('click', runSimulation);
+    </script>
+</body>
+</html>
