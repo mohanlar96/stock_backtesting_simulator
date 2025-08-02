@@ -37,11 +37,11 @@
                     <div class="space-y-3 pt-2">
                          <div class="flex items-center gap-2">
                             <label for="ticker-input" class="font-semibold text-gray-800 whitespace-nowrap">Ticker:</label>
-                            <input type="text" id="ticker-input" value="QQQM" placeholder="e.g., AAPL, MSFT" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full uppercase">
+                            <input type="text" id="ticker-input" value="VOOG" placeholder="e.g., AAPL, MSFT" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full uppercase">
                         </div>
                         <div class="flex items-center gap-2">
                             <label for="api-key" class="font-semibold text-gray-800 whitespace-nowrap">API Key:</label>
-                            <input type="password" id="api-key" placeholder="Get a free key from Alpha Vantage" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            <input type="password" value="PF9NLS6UHJ5VH89X" id="api-key" placeholder="Get a free key from Alpha Vantage" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                         </div>
                          <div class="flex items-center gap-2">
                             <label for="buy-time" class="font-semibold text-gray-800 whitespace-nowrap">Buy Time (EST):</label>
@@ -58,11 +58,11 @@
                         <div class="flex flex-col sm:flex-row gap-4">
                             <div class="flex items-center gap-2">
                                 <label for="start-date" class="font-semibold text-gray-800">From:</label>
-                                <input type="date" id="start-date" value="2024-01-01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                                <input type="date" id="start-date" value="2022-01-01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
                             <div class="flex items-center gap-2">
                                 <label for="end-date" class="font-semibold text-gray-800">To:</label>
-                                <input type="date" id="end-date" value="2024-03-31" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                                <input type="date" id="end-date" value="2024-12-31" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
                         </div>
                     </div>
@@ -86,9 +86,10 @@
                 <!-- Summary -->
                 <div id="summary" class="hidden">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800">Simulation Results</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Buy Time</p><p id="buy-time-display" class="text-xl font-semibold text-blue-600"></p></div>
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Total Profit</p><p id="total-profit" class="text-xl font-semibold"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Target Profit</p><p id="target-profit" class="text-xl font-semibold"></p></div>
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Completed Trades</p><p id="total-trades" class="text-xl font-semibold text-gray-700"></p></div>
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Avg. Hold Time</p><p id="avg-hold-time" class="text-xl font-semibold text-gray-700"></p></div>
                     </div>
@@ -272,7 +273,7 @@
             return { trades, finalOpenPosition: portfolio };
         }
 
-        function displayResults(results, buyTime) {
+        function displayResults(results, buyTime ,investmentAmount, profitPercentage) {
             const { trades, finalOpenPosition } = results;
             const totalProfit = trades.reduce((sum, trade) => sum + trade.profit, 0);
             const totalTrades = trades.length;
@@ -282,10 +283,15 @@
                 totalHoldDays += Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
             });
             const avgHoldTime = totalTrades > 0 ? (totalHoldDays / totalTrades).toFixed(1) : 'N/A';
+
+            const targetProfit = totalTrades * investmentAmount * (profitPercentage / 100);
+
             
             document.getElementById('buy-time-display').textContent = buyTime;
             document.getElementById('total-profit').textContent = `$${totalProfit.toFixed(2)}`;
             document.getElementById('total-profit').className = `text-xl font-semibold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            document.getElementById('target-profit').textContent = `$${targetProfit.toFixed(2)}`;
+            document.getElementById('target-profit').className = `text-xl font-semibold ${targetProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
             document.getElementById('total-trades').textContent = totalTrades;
             document.getElementById('avg-hold-time').textContent = `${avgHoldTime} days`;
 
@@ -368,7 +374,7 @@
                 loaderText.textContent = 'Running backtest...';
                 const backtestResults = runBacktest(filteredData, buyTime, profitPercentage, investmentAmount);
                 
-                displayResults(backtestResults, buyTime);
+                displayResults(backtestResults, buyTime, investmentAmount, profitPercentage);
                 summary.classList.remove('hidden');
                 tradeLogContainer.classList.remove('hidden');
 
