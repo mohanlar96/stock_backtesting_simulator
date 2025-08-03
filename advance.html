@@ -25,14 +25,24 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Advanced Stock Trading Simulator</h1>
-            <p class="mt-2 text-md text-gray-600">Using Moving Averages to Filter Trades</p>
+            <p class="mt-2 text-md text-gray-600">Using Technical Indicators to find Trade Opportunities</p>
         </header>
 
         <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto">
+            <!-- Strategy Selector -->
+            <div class="mb-6">
+                <label for="strategy-select" class="block mb-2 text-sm font-bold text-gray-900">Select Trading Strategy:</label>
+                <select id="strategy-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <option value="hybrid">SMA Filter + RSI Entry (Recommended)</option>
+                    <option value="rsi">RSI Only</option>
+                    <option value="sma">SMA Crossover Only</option>
+                </select>
+            </div>
+
             <!-- Controls -->
             <div class="flex flex-col sm:flex-row items-start justify-between gap-4 border-b border-gray-200 pb-6">
                 <div class="flex-grow space-y-3">
-                    <p><strong class="font-semibold text-gray-800">Strategy:</strong> Only buy if Fast SMA > Slow SMA. Then, buy at a set time and sell on profit target.</p>
+                    <p id="strategy-description" class="p-3 bg-blue-50 rounded-lg text-blue-800 border border-blue-200"></p>
                     <div class="space-y-3 pt-2">
                          <div class="flex items-center gap-2">
                             <label for="ticker-input" class="font-semibold text-gray-800 whitespace-nowrap">Ticker:</label>
@@ -42,7 +52,9 @@
                             <label for="api-key" class="font-semibold text-gray-800 whitespace-nowrap">API Key:</label>
                             <input type="password" value="PF9NLS6UHJ5VH89X" id="api-key" placeholder="Get a free key from Alpha Vantage" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                         </div>
-                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        
+                        <!-- Strategy-specific controls -->
+                        <div id="sma-controls" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="flex items-center gap-2">
                                 <label for="fast-sma" class="font-semibold text-gray-800 whitespace-nowrap">Fast SMA:</label>
                                 <input type="number" id="fast-sma" value="50" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
@@ -51,9 +63,23 @@
                                 <label for="slow-sma" class="font-semibold text-gray-800 whitespace-nowrap">Slow SMA:</label>
                                 <input type="number" id="slow-sma" value="200" min="2" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
+                        </div>
+                        <div id="rsi-controls" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
+                             <div class="flex items-center gap-2">
+                                <label for="rsi-period" class="font-semibold text-gray-800 whitespace-nowrap">RSI Period:</label>
+                                <input type="number" id="rsi-period" value="14" min="2" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label for="rsi-oversold" class="font-semibold text-gray-800 whitespace-nowrap">RSI Oversold:</label>
+                                <input type="number" id="rsi-oversold" value="100" min="1" max="99" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
+
+                        <!-- General controls -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                             <div class="flex items-center gap-2">
                                 <label for="buy-time" class="font-semibold text-gray-800 whitespace-nowrap">Buy Time (EST):</label>
-                                <input type="time" id="buy-time" value="13:00" min="09:30" max="16:00" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                                <input type="time" id="buy-time" value="15:55" min="09:30" max="16:00" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
                             <div class="flex items-center gap-2">
                                 <label for="investment-amount" class="font-semibold text-gray-800 whitespace-nowrap">Investment ($):</label>
@@ -61,10 +87,14 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <label for="profit-percent" class="font-semibold text-gray-800 whitespace-nowrap">Profit Target (%):</label>
-                                <input type="number" id="profit-percent" value="1" min="0.1" step="0.1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                                <input type="number" id="profit-percent" value="2" min="0.1" step="0.1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                             <div class="flex items-center gap-2">
+                                <label for="stop-loss-percent" class="font-semibold text-gray-800 whitespace-nowrap">Stop-Loss (%):</label>
+                                <input type="number" id="stop-loss-percent" value="4" min="0.1" step="0.1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
                         </div>
-                        <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex flex-col sm:flex-row gap-4 mt-3">
                             <div class="flex items-center gap-2">
                                 <label for="start-date" class="font-semibold text-gray-800">From:</label>
                                 <input type="date" id="start-date" value="2022-01-01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
@@ -95,10 +125,9 @@
                 <!-- Summary -->
                 <div id="summary" class="hidden">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800">Simulation Results</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
-                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Buy Time</p><p id="buy-time-display" class="text-xl font-semibold text-blue-600"></p></div>
-                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Total Profit</p><p id="total-profit" class="text-xl font-semibold"></p></div>
-                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Target Profit</p><p id="target-profit" class="text-xl font-semibold"></p></div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Total P/L</p><p id="total-profit" class="text-xl font-semibold"></p></div>
+                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Win Rate</p><p id="win-rate" class="text-xl font-semibold text-gray-700"></p></div>
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Completed Trades</p><p id="total-trades" class="text-xl font-semibold text-gray-700"></p></div>
                         <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">Avg. Hold Time</p><p id="avg-hold-time" class="text-xl font-semibold text-gray-700"></p></div>
                     </div>
@@ -112,7 +141,7 @@
                             <thead>
                                 <tr class="border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                     <th class="px-5 py-3">#</th><th class="px-5 py-3">Buy Date & Time</th><th class="px-5 py-3">Buy Price</th>
-                                    <th class="px-5 py-3">Sell Date & Time</th><th class="px-5 py-3">Sell Price</th><th class="px-5 py-3">Profit</th><th class="px-5 py-3">Hold Days</th>
+                                    <th class="px-5 py-3">Sell Date & Time</th><th class="px-5 py-3">Sell Price</th><th class="px-5 py-3">P/L ($)</th><th class="px-5 py-3">Hold Days</th>
                                 </tr>
                             </thead>
                             <tbody id="trade-log-body" class="text-sm"></tbody>
@@ -145,8 +174,9 @@
                     resolve(db);
                 };
                 request.onupgradeneeded = (event) => {
-                    event.target.result.createObjectStore('monthlyData');
-                    event.target.result.createObjectStore('dailyData');
+                    const storeNames = event.target.result.objectStoreNames;
+                    if (!storeNames.contains('monthlyData')) event.target.result.createObjectStore('monthlyData');
+                    if (!storeNames.contains('dailyData')) event.target.result.createObjectStore('dailyData');
                 };
             });
         }
@@ -173,10 +203,10 @@
             });
         }
 
-        // --- API & Backtesting ---
+        // --- API & Data ---
 
         async function fetchDailyData(ticker, apiKey, onProgress) {
-            onProgress('Fetching daily data for SMA calculation...');
+            onProgress('Fetching daily data for indicator calculations...');
             const cacheKey = `${ticker}_daily`;
             let csvText = await getCachedData('dailyData', cacheKey);
 
@@ -195,7 +225,7 @@
             const rows = csvText.trim().split('\n').slice(1);
             rows.forEach(row => {
                 const [date, open, high, low, close, adjusted_close] = row.split(',');
-                dailyPrices[date] = parseFloat(adjusted_close);
+                if(date && adjusted_close) dailyPrices[date] = parseFloat(adjusted_close);
             });
             return dailyPrices;
         }
@@ -221,7 +251,7 @@
 
                 if (csvText) {
                     onProgress(`Loading ${month} from cache...`);
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 } else {
                     onProgress(`Fetching intraday data for ${month} (${i+1} of ${monthsToFetch.length})...`);
                     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=1min&month=${month}&outputsize=full&apikey=${apiKey}&datatype=csv`;
@@ -254,6 +284,8 @@
             return allData;
         }
 
+        // --- Indicator Calculations ---
+
         function calculateSMAs(dailyPrices, fastPeriod, slowPeriod) {
             const dates = Object.keys(dailyPrices).sort();
             const smas = {};
@@ -273,7 +305,47 @@
             return smas;
         }
 
-        function runBacktest(intradayData, smas, buyTime, profitPercentage, investmentAmount) {
+        function calculateRSI(dailyPrices, period) {
+            const dates = Object.keys(dailyPrices).sort();
+            const rsiValues = {};
+            let avgGain = 0, avgLoss = 0;
+
+            // Calculate initial average gain/loss
+            for (let i = 1; i <= period; i++) {
+                const change = dailyPrices[dates[i]] - dailyPrices[dates[i - 1]];
+                if (change > 0) {
+                    avgGain += change;
+                } else {
+                    avgLoss -= change; // avgLoss is positive
+                }
+            }
+            avgGain /= period;
+            avgLoss /= period;
+
+            for (let i = period; i < dates.length; i++) {
+                const currentDate = dates[i];
+                if(i > period) {
+                    const change = dailyPrices[currentDate] - dailyPrices[dates[i - 1]];
+                    let gain = change > 0 ? change : 0;
+                    let loss = change < 0 ? -change : 0;
+                    avgGain = (avgGain * (period - 1) + gain) / period;
+                    avgLoss = (avgLoss * (period - 1) + loss) / period;
+                }
+                
+                if (avgLoss === 0) {
+                    rsiValues[currentDate] = 100;
+                } else {
+                    const rs = avgGain / avgLoss;
+                    rsiValues[currentDate] = 100 - (100 / (1 + rs));
+                }
+            }
+            return rsiValues;
+        }
+
+        // --- Backtesting & Display ---
+
+        function runBacktest(params) {
+            const { strategy, intradayData, dailyIndicators, buyTime, profitPercentage, stopLossPercentage, investmentAmount } = params;
             let portfolio = null;
             const trades = [];
             const sortedDates = Object.keys(intradayData).sort();
@@ -281,14 +353,23 @@
             
             for (const date of sortedDates) {
                 const dayData = intradayData[date];
-                const dailySma = smas[date];
-                if (!dayData || !dailySma) continue;
+                if (!dayData) continue;
+                
                 let soldToday = false;
                 
+                // Check for sell conditions if we hold a position
                 if (portfolio) {
                     for (const candle of dayData) {
-                        if (candle.price >= portfolio.buyPrice * sellMultiplier) {
+                        let sold = false;
+                        if (candle.price >= portfolio.sellTargetPrice) {
                             trades.push({ ...portfolio, sellPrice: candle.price, sellDate: date, sellTime: candle.time, profit: (candle.price - portfolio.buyPrice) * portfolio.shares });
+                            sold = true;
+                        } else if (candle.price <= portfolio.stopLossPrice) {
+                             trades.push({ ...portfolio, sellPrice: candle.price, sellDate: date, sellTime: candle.time, profit: (candle.price - portfolio.buyPrice) * portfolio.shares });
+                             sold = true;
+                        }
+
+                        if(sold){
                             portfolio = null;
                             soldToday = true;
                             break;
@@ -296,15 +377,36 @@
                     }
                 }
                 
-                // SMA Crossover Rule: Only buy if fast SMA is above slow SMA
-                if (!portfolio && !soldToday && dailySma.fast > dailySma.slow) {
+                // Check for buy condition based on strategy
+                let buySignal = false;
+                const dailySma = dailyIndicators.smas[date];
+                const dailyRsi = dailyIndicators.rsi[date];
+
+                if (strategy === 'sma') {
+                    if (dailySma && dailySma.fast > dailySma.slow) {
+                        buySignal = true;
+                    }
+                } else if (strategy === 'rsi') {
+                    if (dailyRsi && dailyRsi < params.rsiOversold) {
+                        buySignal = true;
+                    }
+                } else if (strategy === 'hybrid') {
+                    if (dailySma && dailySma.fast > dailySma.slow && dailyRsi && dailyRsi < params.rsiOversold) {
+                        buySignal = true;
+                    }
+                }
+                
+                if (buySignal && !portfolio && !soldToday) {
                     const buyCandle = dayData.find(c => c.time === buyTime);
                     if (buyCandle) {
+                        const buyPrice = buyCandle.price;
                         portfolio = {
-                            buyPrice: buyCandle.price,
+                            buyPrice: buyPrice,
                             buyDate: date,
                             buyTime: buyTime,
-                            shares: investmentAmount / buyCandle.price,
+                            shares: investmentAmount / buyPrice,
+                            sellTargetPrice: buyPrice * sellMultiplier,
+                            stopLossPrice: buyPrice * (1 - stopLossPercentage / 100)
                         };
                     }
                 }
@@ -312,31 +414,51 @@
             return { trades, finalOpenPosition: portfolio };
         }
 
-        function displayResults(results, buyTime, investmentAmount, profitPercentage) {
+        function displayResults(results) {
             const { trades, finalOpenPosition } = results;
             const totalProfit = trades.reduce((sum, trade) => sum + trade.profit, 0);
             const totalTrades = trades.length;
-            const targetProfit = totalTrades * investmentAmount * (profitPercentage / 100);
+            const winningTrades = trades.filter(t => t.profit > 0).length;
+            const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100).toFixed(1) : 'N/A';
 
-            let totalHoldDays = 0;
+            let totalHoldMs = 0;
             trades.forEach(trade => {
-                const diffTime = Math.abs(new Date(trade.sellDate) - new Date(trade.buyDate));
-                totalHoldDays += Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                const buyDateTime = new Date(`${trade.buyDate}T${trade.buyTime}:00`);
+                const sellDateTime = new Date(`${trade.sellDate}T${trade.sellTime}:00`);
+                totalHoldMs += Math.abs(sellDateTime - buyDateTime);
             });
-            const avgHoldTime = totalTrades > 0 ? (totalHoldDays / totalTrades).toFixed(1) : 'N/A';
             
-            document.getElementById('buy-time-display').textContent = buyTime;
+            let avgHoldTime = "N/A";
+            if (totalTrades > 0) {
+                 const avgMs = totalHoldMs / totalTrades;
+                 const days = Math.floor(avgMs / (1000 * 60 * 60 * 24));
+                 const hours = Math.floor((avgMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                 const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+                 if (days > 0) {
+                     avgHoldTime = `${days}d ${hours}h`;
+                 } else if (hours > 0) {
+                     avgHoldTime = `${hours}h ${minutes}m`;
+                 } else {
+                     avgHoldTime = `${minutes}m`;
+                 }
+            }
+            
             document.getElementById('total-profit').textContent = `$${totalProfit.toFixed(2)}`;
             document.getElementById('total-profit').className = `text-xl font-semibold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
-            document.getElementById('target-profit').textContent = `$${targetProfit.toFixed(2)}`;
-            document.getElementById('target-profit').className = `text-xl font-semibold ${targetProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            document.getElementById('win-rate').textContent = `${winRate}%`;
             document.getElementById('total-trades').textContent = totalTrades;
-            document.getElementById('avg-hold-time').textContent = `${avgHoldTime} days`;
+            document.getElementById('avg-hold-time').textContent = avgHoldTime;
 
             const tradeLogBody = document.getElementById('trade-log-body');
             tradeLogBody.innerHTML = '';
             trades.forEach((trade, index) => {
-                const holdDays = Math.max(1, Math.ceil(Math.abs(new Date(trade.sellDate) - new Date(trade.buyDate)) / (1000 * 60 * 60 * 24)));
+                const buyDateTime = new Date(`${trade.buyDate}T${trade.buyTime}:00`);
+                const sellDateTime = new Date(`${trade.sellDate}T${trade.sellTime}:00`);
+                const diffMs = Math.abs(sellDateTime - buyDateTime);
+                const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const holdDisplay = days > 0 ? `${days}d` : `${Math.round(diffMs / (1000 * 60))}m`;
+
+                const profitClass = trade.profit >= 0 ? 'text-green-600' : 'text-red-600';
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="px-5 py-4">${index + 1}</td>
@@ -344,8 +466,8 @@
                         <td class="px-5 py-4">$${trade.buyPrice.toFixed(2)}</td>
                         <td class="px-5 py-4">${trade.sellDate} @ ${trade.sellTime}</td>
                         <td class="px-5 py-4">$${trade.sellPrice.toFixed(2)}</td>
-                        <td class="px-5 py-4 text-green-600 font-medium">$${trade.profit.toFixed(2)}</td>
-                        <td class="px-5 py-4">${holdDays}</td>
+                        <td class="px-5 py-4 ${profitClass} font-medium">$${trade.profit.toFixed(2)}</td>
+                        <td class="px-5 py-4">${holdDisplay}</td>
                     </tr>`;
                 tradeLogBody.innerHTML += row;
             });
@@ -360,6 +482,32 @@
             }
         }
 
+        // --- Main App Logic ---
+
+        function setupUI() {
+            const strategySelect = document.getElementById('strategy-select');
+            const smaControls = document.getElementById('sma-controls');
+            const rsiControls = document.getElementById('rsi-controls');
+            const strategyDescription = document.getElementById('strategy-description');
+
+            const descriptions = {
+                sma: '<strong>SMA Crossover Only:</strong> Buys when the shorter-term moving average crosses above the longer-term one. Very selective, only trades in strong uptrends.',
+                rsi: '<strong>RSI Only:</strong> Buys whenever the RSI drops below the "Oversold" level. More frequent trades, but can be risky in a downtrend ("catching a falling knife").',
+                hybrid: '<strong>SMA Filter + RSI Entry:</strong> The best of both worlds. Uses the SMA Crossover to confirm a long-term uptrend, then uses RSI to find a good "buy the dip" entry point within that trend.'
+            };
+
+            function updateControls() {
+                const selected = strategySelect.value;
+                smaControls.style.display = (selected === 'sma' || selected === 'hybrid') ? 'grid' : 'none';
+                rsiControls.style.display = (selected === 'rsi' || selected === 'hybrid') ? 'grid' : 'none';
+                strategyDescription.innerHTML = descriptions[selected];
+            }
+
+            strategySelect.addEventListener('change', updateControls);
+            document.getElementById('run-button').addEventListener('click', runSimulation);
+            updateControls(); // Initial setup
+        }
+        
         async function runSimulation() {
             const runButton = document.getElementById('run-button');
             const loader = document.getElementById('loader');
@@ -379,46 +527,56 @@
 
             try {
                 await initDB();
+                // Common parameters
                 const ticker = document.getElementById('ticker-input').value.toUpperCase();
                 const apiKey = document.getElementById('api-key').value;
-                const fastSma = parseInt(document.getElementById('fast-sma').value, 10);
-                const slowSma = parseInt(document.getElementById('slow-sma').value, 10);
                 const buyTime = document.getElementById('buy-time').value;
                 const investmentAmount = parseFloat(document.getElementById('investment-amount').value);
                 const profitPercentage = parseFloat(document.getElementById('profit-percent').value);
+                const stopLossPercentage = parseFloat(document.getElementById('stop-loss-percent').value);
                 const startDate = document.getElementById('start-date').value;
                 const endDate = document.getElementById('end-date').value;
+                const strategy = document.getElementById('strategy-select').value;
 
-                if (!ticker) throw new Error("Please enter a stock ticker symbol.");
-                if (!apiKey) throw new Error("Please provide an Alpha Vantage API key.");
-                if (isNaN(fastSma) || isNaN(slowSma) || fastSma >= slowSma) throw new Error("Fast SMA must be less than Slow SMA.");
-                if (!buyTime) throw new Error("Please select a buy time.");
-                if (isNaN(investmentAmount) || investmentAmount <= 0) throw new Error("Please enter a valid, positive investment amount.");
-                if (isNaN(profitPercentage) || profitPercentage <= 0) throw new Error("Please enter a valid, positive number for the profit target.");
-                if (!startDate || !endDate || new Date(startDate) >= new Date(endDate)) throw new Error("The 'From' date must be before the 'To' date.");
+                // Validation
+                if (!ticker || !apiKey || !buyTime || !startDate || !endDate) throw new Error("Please fill all required fields.");
+                if (isNaN(investmentAmount) || isNaN(profitPercentage) || isNaN(stopLossPercentage)) throw new Error("Please enter valid numbers for investment, profit, and stop-loss.");
+                if (new Date(startDate) >= new Date(endDate)) throw new Error("The 'From' date must be before the 'To' date.");
 
+                // Fetch data
                 const dailyPrices = await fetchDailyData(ticker, apiKey, (progress) => loaderText.textContent = progress);
-                const smas = calculateSMAs(dailyPrices, fastSma, slowSma);
                 
-                const intradayData = await fetchIntradayData(ticker, startDate, endDate, apiKey, (progress) => {
-                    loaderText.textContent = progress;
-                });
+                // Calculate all indicators we might need
+                const dailyIndicators = {};
+                const fastSma = parseInt(document.getElementById('fast-sma').value, 10);
+                const slowSma = parseInt(document.getElementById('slow-sma').value, 10);
+                const rsiPeriod = parseInt(document.getElementById('rsi-period').value, 10);
+                dailyIndicators.smas = calculateSMAs(dailyPrices, fastSma, slowSma);
+                dailyIndicators.rsi = calculateRSI(dailyPrices, rsiPeriod);
                 
+                const backtestParams = { 
+                    strategy, buyTime, profitPercentage, stopLossPercentage, investmentAmount,
+                    rsiOversold: parseInt(document.getElementById('rsi-oversold').value, 10)
+                };
+
+                // Fetch intraday data
+                const intradayData = await fetchIntradayData(ticker, startDate, endDate, apiKey, (progress) => loaderText.textContent = progress);
                 const filteredIntradayData = Object.keys(intradayData)
                     .filter(date => date >= startDate && date <= endDate)
-                    .reduce((obj, key) => {
-                        obj[key] = intradayData[key];
-                        return obj;
-                    }, {});
+                    .reduce((obj, key) => { obj[key] = intradayData[key]; return obj; }, {});
 
                 if (Object.keys(filteredIntradayData).length === 0) {
                     throw new Error("No intraday data was found for the selected date range.");
                 }
+                backtestParams.intradayData = filteredIntradayData;
+                backtestParams.dailyIndicators = dailyIndicators;
 
+                // Run backtest
                 loaderText.textContent = 'Running backtest...';
-                const backtestResults = runBacktest(filteredIntradayData, smas, buyTime, profitPercentage, investmentAmount);
+                const backtestResults = runBacktest(backtestParams);
                 
-                displayResults(backtestResults, buyTime, investmentAmount, profitPercentage);
+                // Display results
+                displayResults(backtestResults);
                 summary.classList.remove('hidden');
                 tradeLogContainer.classList.remove('hidden');
 
@@ -431,7 +589,8 @@
             }
         }
 
-        document.getElementById('run-button').addEventListener('click', runSimulation);
+        document.addEventListener('DOMContentLoaded', setupUI);
+
     </script>
 </body>
 </html>
