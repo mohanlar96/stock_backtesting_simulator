@@ -6,6 +6,8 @@
     <title>Advanced Stock Trading Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -34,6 +36,7 @@
                 <label for="strategy-select" class="block mb-2 text-sm font-bold text-gray-900">Select Trading Strategy:</label>
                 <select id="strategy-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                     <option value="hybrid">SMA Filter + RSI Entry (Recommended)</option>
+                    <option value="bollinger">Bollinger Bands</option>
                     <option value="rsi">RSI Only</option>
                     <option value="sma">SMA Crossover Only</option>
                 </select>
@@ -54,6 +57,16 @@
                         </div>
                         
                         <!-- Strategy-specific controls -->
+                        <div id="bollinger-controls" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="flex items-center gap-2">
+                                <label for="bollinger-period" class="font-semibold text-gray-800 whitespace-nowrap">Period:</label>
+                                <input type="number" id="bollinger-period" value="20" min="2" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label for="bollinger-stddev" class="font-semibold text-gray-800 whitespace-nowrap">Std. Dev:</label>
+                                <input type="number" id="bollinger-stddev" value="2" min="1" step="0.1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                            </div>
+                        </div>
                         <div id="sma-controls" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="flex items-center gap-2">
                                 <label for="fast-sma" class="font-semibold text-gray-800 whitespace-nowrap">Fast SMA:</label>
@@ -71,21 +84,17 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <label for="rsi-oversold" class="font-semibold text-gray-800 whitespace-nowrap">RSI Oversold:</label>
-                                <input type="number" id="rsi-oversold" value="100" min="1" max="99" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
+                                <input type="number" id="rsi-oversold" value="100" min="1" max="100" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
                         </div>
 
                         <!-- General controls -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                             <div class="flex items-center gap-2">
-                                <label for="buy-time" class="font-semibold text-gray-800 whitespace-nowrap">Buy Time (EST):</label>
-                                <input type="time" id="buy-time" value="15:55" min="09:30" max="16:00" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
-                            </div>
-                            <div class="flex items-center gap-2">
                                 <label for="investment-amount" class="font-semibold text-gray-800 whitespace-nowrap">Investment ($):</label>
                                 <input type="number" id="investment-amount" value="100" min="1" step="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
-                            <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2">
                                 <label for="profit-percent" class="font-semibold text-gray-800 whitespace-nowrap">Profit Target (%):</label>
                                 <input type="number" id="profit-percent" value="2" min="0.1" step="0.1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 w-full">
                             </div>
@@ -133,6 +142,12 @@
                     </div>
                 </div>
 
+                <!-- Chart Container -->
+                <div id="chart-container" class="hidden mt-8">
+                     <h3 class="text-xl font-bold mb-4 text-gray-800">Trade Visualization</h3>
+                     <canvas id="trade-chart"></canvas>
+                </div>
+
                 <!-- Trade Log -->
                 <div id="trade-log-container" class="hidden mt-8">
                     <h3 class="text-xl font-bold mb-4 text-gray-800">Trade Log</h3>
@@ -141,7 +156,7 @@
                             <thead>
                                 <tr class="border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                     <th class="px-5 py-3">#</th><th class="px-5 py-3">Buy Date & Time</th><th class="px-5 py-3">Buy Price</th>
-                                    <th class="px-5 py-3">Sell Date & Time</th><th class="px-5 py-3">Sell Price</th><th class="px-5 py-3">P/L ($)</th><th class="px-5 py-3">Hold Days</th>
+                                    <th class="px-5 py-3">Sell Date & Time</th><th class="px-5 py-3">Sell Price</th><th class="px-5 py-3">P/L ($)</th><th class="px-5 py-3">Hold Time</th>
                                 </tr>
                             </thead>
                             <tbody id="trade-log-body" class="text-sm"></tbody>
@@ -310,42 +325,62 @@
             const rsiValues = {};
             let avgGain = 0, avgLoss = 0;
 
-            // Calculate initial average gain/loss
-            for (let i = 1; i <= period; i++) {
-                const change = dailyPrices[dates[i]] - dailyPrices[dates[i - 1]];
-                if (change > 0) {
-                    avgGain += change;
-                } else {
-                    avgLoss -= change; // avgLoss is positive
-                }
-            }
-            avgGain /= period;
-            avgLoss /= period;
+            for (let i = 1; i < dates.length; i++) {
+                const priceDate = dates[i];
+                const prevPriceDate = dates[i-1];
+                if(!dailyPrices[priceDate] || !dailyPrices[prevPriceDate]) continue;
 
-            for (let i = period; i < dates.length; i++) {
-                const currentDate = dates[i];
-                if(i > period) {
-                    const change = dailyPrices[currentDate] - dailyPrices[dates[i - 1]];
-                    let gain = change > 0 ? change : 0;
-                    let loss = change < 0 ? -change : 0;
+                const change = dailyPrices[priceDate] - dailyPrices[prevPriceDate];
+                let gain = change > 0 ? change : 0;
+                let loss = change < 0 ? -change : 0;
+
+                if (i <= period) {
+                    avgGain += gain;
+                    avgLoss += loss;
+                    if (i === period) {
+                        avgGain /= period;
+                        avgLoss /= period;
+                    }
+                } else {
                     avgGain = (avgGain * (period - 1) + gain) / period;
                     avgLoss = (avgLoss * (period - 1) + loss) / period;
                 }
-                
-                if (avgLoss === 0) {
-                    rsiValues[currentDate] = 100;
-                } else {
-                    const rs = avgGain / avgLoss;
-                    rsiValues[currentDate] = 100 - (100 / (1 + rs));
+
+                if (i >= period) {
+                    if (avgLoss === 0) {
+                        rsiValues[priceDate] = 100;
+                    } else {
+                        const rs = avgGain / avgLoss;
+                        rsiValues[priceDate] = 100 - (100 / (1 + rs));
+                    }
                 }
             }
             return rsiValues;
         }
 
+        function calculateBollingerBands(dailyPrices, period, stdDev) {
+            const dates = Object.keys(dailyPrices).sort();
+            const bands = {};
+            for (let i = period - 1; i < dates.length; i++) {
+                const currentDate = dates[i];
+                const slice = dates.slice(i - period + 1, i + 1).map(date => dailyPrices[date]);
+                const sma = slice.reduce((sum, price) => sum + price, 0) / period;
+                const variance = slice.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / period;
+                const deviation = Math.sqrt(variance);
+                bands[currentDate] = {
+                    middle: sma,
+                    upper: sma + (stdDev * deviation),
+                    lower: sma - (stdDev * deviation)
+                };
+            }
+            return bands;
+        }
+
+
         // --- Backtesting & Display ---
 
         function runBacktest(params) {
-            const { strategy, intradayData, dailyIndicators, buyTime, profitPercentage, stopLossPercentage, investmentAmount } = params;
+            const { strategy, intradayData, dailyIndicators, profitPercentage, stopLossPercentage, investmentAmount } = params;
             let portfolio = null;
             const trades = [];
             const sortedDates = Object.keys(intradayData).sort();
@@ -357,7 +392,7 @@
                 
                 let soldToday = false;
                 
-                // Check for sell conditions if we hold a position
+                // Check for sell conditions first
                 if (portfolio) {
                     for (const candle of dayData) {
                         let sold = false;
@@ -372,49 +407,147 @@
                         if(sold){
                             portfolio = null;
                             soldToday = true;
-                            break;
+                            break; 
                         }
                     }
                 }
-                
-                // Check for buy condition based on strategy
-                let buySignal = false;
-                const dailySma = dailyIndicators.smas[date];
-                const dailyRsi = dailyIndicators.rsi[date];
 
+                // If we sold today, or still have a position, don't look for a new one.
+                if (soldToday || portfolio) continue;
+
+                // Check for buy condition
+                let dailyBuySignal = false;
                 if (strategy === 'sma') {
-                    if (dailySma && dailySma.fast > dailySma.slow) {
-                        buySignal = true;
-                    }
+                    const dailySma = dailyIndicators.smas ? dailyIndicators.smas[date] : undefined;
+                    if (dailySma && dailySma.fast > dailySma.slow) dailyBuySignal = true;
                 } else if (strategy === 'rsi') {
-                    if (dailyRsi && dailyRsi < params.rsiOversold) {
-                        buySignal = true;
-                    }
+                    const dailyRsi = dailyIndicators.rsi ? dailyIndicators.rsi[date] : undefined;
+                    if (dailyRsi && dailyRsi < params.rsiOversold) dailyBuySignal = true;
                 } else if (strategy === 'hybrid') {
-                    if (dailySma && dailySma.fast > dailySma.slow && dailyRsi && dailyRsi < params.rsiOversold) {
-                        buySignal = true;
-                    }
+                    const dailySma = dailyIndicators.smas ? dailyIndicators.smas[date] : undefined;
+                    const dailyRsi = dailyIndicators.rsi ? dailyIndicators.rsi[date] : undefined;
+                    if (dailySma && dailySma.fast > dailySma.slow && dailyRsi && dailyRsi < params.rsiOversold) dailyBuySignal = true;
+                } else if (strategy === 'bollinger') {
+                    if (dailyIndicators.bollinger && dailyIndicators.bollinger[date]) dailyBuySignal = true; // Signal is checked per candle
                 }
-                
-                if (buySignal && !portfolio && !soldToday) {
-                    const buyCandle = dayData.find(c => c.time === buyTime);
-                    if (buyCandle) {
-                        const buyPrice = buyCandle.price;
-                        portfolio = {
-                            buyPrice: buyPrice,
-                            buyDate: date,
-                            buyTime: buyTime,
-                            shares: investmentAmount / buyPrice,
-                            sellTargetPrice: buyPrice * sellMultiplier,
-                            stopLossPrice: buyPrice * (1 - stopLossPercentage / 100)
-                        };
+
+                if (dailyBuySignal) {
+                    for (const candle of dayData) {
+                        let actualBuySignal = false;
+                        if (strategy === 'bollinger') {
+                            const dailyBoll = dailyIndicators.bollinger[date];
+                            if (candle.price <= dailyBoll.lower) {
+                                actualBuySignal = true;
+                            }
+                        } else {
+                            // For other strategies, the daily signal is enough for a one-time check
+                            actualBuySignal = true;
+                        }
+
+                        if (actualBuySignal) {
+                            const buyPrice = candle.price;
+                            portfolio = {
+                                buyPrice: buyPrice,
+                                buyDate: date,
+                                buyTime: candle.time,
+                                shares: investmentAmount / buyPrice,
+                                sellTargetPrice: buyPrice * sellMultiplier,
+                                stopLossPrice: buyPrice * (1 - stopLossPercentage / 100)
+                            };
+                            break; // Exit the loop for this day after buying
+                        }
                     }
                 }
             }
             return { trades, finalOpenPosition: portfolio };
         }
 
-        function displayResults(results) {
+        let tradeChart = null; // Keep a reference to the chart instance
+
+        function displayChart(trades, intradayData) {
+            const chartContainer = document.getElementById('chart-container');
+            chartContainer.classList.remove('hidden');
+
+            const ctx = document.getElementById('trade-chart').getContext('2d');
+            
+            if (tradeChart) {
+                tradeChart.destroy(); // Destroy previous chart instance if it exists
+            }
+
+            const priceData = [];
+            Object.keys(intradayData).sort().forEach(date => {
+                intradayData[date].forEach(candle => {
+                    priceData.push({
+                        x: new Date(`${date}T${candle.time}`),
+                        y: candle.price
+                    });
+                });
+            });
+
+            const buyPoints = trades.map(trade => ({
+                x: new Date(`${trade.buyDate}T${trade.buyTime}`),
+                y: trade.buyPrice
+            }));
+
+            const sellPoints = trades.map(trade => ({
+                x: new Date(`${trade.sellDate}T${trade.sellTime}`),
+                y: trade.sellPrice
+            }));
+
+
+            tradeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Price',
+                        data: priceData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }, {
+                        label: 'Buy',
+                        data: buyPoints,
+                        backgroundColor: 'rgb(75, 192, 192)',
+                        pointStyle: 'triangle',
+                        radius: 7,
+                        rotation: 0,
+                        type: 'scatter'
+                    }, {
+                        label: 'Sell',
+                        data: sellPoints,
+                        backgroundColor: 'rgb(255, 99, 132)',
+                        pointStyle: 'triangle',
+                        radius: 7,
+                        rotation: 180,
+                        type: 'scatter'
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            beginAtZero: false
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    responsive: true
+                }
+            });
+        }
+
+
+        function displayResults(results, intradayData) {
             const { trades, finalOpenPosition } = results;
             const totalProfit = trades.reduce((sum, trade) => sum + trade.profit, 0);
             const totalTrades = trades.length;
@@ -455,8 +588,14 @@
                 const buyDateTime = new Date(`${trade.buyDate}T${trade.buyTime}:00`);
                 const sellDateTime = new Date(`${trade.sellDate}T${trade.sellTime}:00`);
                 const diffMs = Math.abs(sellDateTime - buyDateTime);
-                const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                const holdDisplay = days > 0 ? `${days}d` : `${Math.round(diffMs / (1000 * 60))}m`;
+                let holdDisplay;
+                const days = Math.floor(diffMs / (86400000)); // 1000*60*60*24
+                const hours = Math.floor((diffMs % 86400000) / 3600000); // 1000*60*60
+                const minutes = Math.round(((diffMs % 86400000) % 3600000) / 60000); // 1000*60
+                if (days > 0) holdDisplay = `${days}d ${hours}h`;
+                else if (hours > 0) holdDisplay = `${hours}h ${minutes}m`;
+                else holdDisplay = `${minutes}m`;
+
 
                 const profitClass = trade.profit >= 0 ? 'text-green-600' : 'text-red-600';
                 const row = `
@@ -480,6 +619,8 @@
             } else {
                 finalPositionEl.classList.add('hidden');
             }
+
+            displayChart(trades, intradayData);
         }
 
         // --- Main App Logic ---
@@ -488,18 +629,21 @@
             const strategySelect = document.getElementById('strategy-select');
             const smaControls = document.getElementById('sma-controls');
             const rsiControls = document.getElementById('rsi-controls');
+            const bollingerControls = document.getElementById('bollinger-controls');
             const strategyDescription = document.getElementById('strategy-description');
 
             const descriptions = {
                 sma: '<strong>SMA Crossover Only:</strong> Buys when the shorter-term moving average crosses above the longer-term one. Very selective, only trades in strong uptrends.',
                 rsi: '<strong>RSI Only:</strong> Buys whenever the RSI drops below the "Oversold" level. More frequent trades, but can be risky in a downtrend ("catching a falling knife").',
-                hybrid: '<strong>SMA Filter + RSI Entry:</strong> The best of both worlds. Uses the SMA Crossover to confirm a long-term uptrend, then uses RSI to find a good "buy the dip" entry point within that trend.'
+                hybrid: '<strong>SMA Filter + RSI Entry:</strong> Uses the SMA Crossover to confirm a long-term uptrend, then uses RSI to find a good "buy the dip" entry point within that trend.',
+                bollinger: '<strong>Bollinger Bands:</strong> Buys when the price touches or crosses below the lower band, suggesting the asset is oversold and likely to revert to its mean (average price). Works in most market conditions.'
             };
 
             function updateControls() {
                 const selected = strategySelect.value;
                 smaControls.style.display = (selected === 'sma' || selected === 'hybrid') ? 'grid' : 'none';
                 rsiControls.style.display = (selected === 'rsi' || selected === 'hybrid') ? 'grid' : 'none';
+                bollingerControls.style.display = (selected === 'bollinger') ? 'grid' : 'none';
                 strategyDescription.innerHTML = descriptions[selected];
             }
 
@@ -515,6 +659,7 @@
             const resultsContainer = document.getElementById('results-container');
             const summary = document.getElementById('summary');
             const tradeLogContainer = document.getElementById('trade-log-container');
+            const chartContainer = document.getElementById('chart-container');
             const errorMessage = document.getElementById('error-message');
             
             runButton.disabled = true;
@@ -522,6 +667,7 @@
             resultsContainer.classList.remove('hidden');
             summary.classList.add('hidden');
             tradeLogContainer.classList.add('hidden');
+            chartContainer.classList.add('hidden');
             loader.style.display = 'flex';
             loaderText.textContent = 'Preparing simulation...';
 
@@ -530,7 +676,6 @@
                 // Common parameters
                 const ticker = document.getElementById('ticker-input').value.toUpperCase();
                 const apiKey = document.getElementById('api-key').value;
-                const buyTime = document.getElementById('buy-time').value;
                 const investmentAmount = parseFloat(document.getElementById('investment-amount').value);
                 const profitPercentage = parseFloat(document.getElementById('profit-percent').value);
                 const stopLossPercentage = parseFloat(document.getElementById('stop-loss-percent').value);
@@ -539,7 +684,7 @@
                 const strategy = document.getElementById('strategy-select').value;
 
                 // Validation
-                if (!ticker || !apiKey || !buyTime || !startDate || !endDate) throw new Error("Please fill all required fields.");
+                if (!ticker || !apiKey || !startDate || !endDate) throw new Error("Please fill all required fields.");
                 if (isNaN(investmentAmount) || isNaN(profitPercentage) || isNaN(stopLossPercentage)) throw new Error("Please enter valid numbers for investment, profit, and stop-loss.");
                 if (new Date(startDate) >= new Date(endDate)) throw new Error("The 'From' date must be before the 'To' date.");
 
@@ -547,17 +692,26 @@
                 const dailyPrices = await fetchDailyData(ticker, apiKey, (progress) => loaderText.textContent = progress);
                 
                 // Calculate all indicators we might need
-                const dailyIndicators = {};
-                const fastSma = parseInt(document.getElementById('fast-sma').value, 10);
-                const slowSma = parseInt(document.getElementById('slow-sma').value, 10);
-                const rsiPeriod = parseInt(document.getElementById('rsi-period').value, 10);
-                dailyIndicators.smas = calculateSMAs(dailyPrices, fastSma, slowSma);
-                dailyIndicators.rsi = calculateRSI(dailyPrices, rsiPeriod);
-                
+                const dailyIndicators = { prices: dailyPrices };
                 const backtestParams = { 
-                    strategy, buyTime, profitPercentage, stopLossPercentage, investmentAmount,
-                    rsiOversold: parseInt(document.getElementById('rsi-oversold').value, 10)
+                    strategy, profitPercentage, stopLossPercentage, investmentAmount, dailyIndicators
                 };
+
+                if (strategy === 'sma' || strategy === 'hybrid') {
+                    const fastSma = parseInt(document.getElementById('fast-sma').value, 10);
+                    const slowSma = parseInt(document.getElementById('slow-sma').value, 10);
+                    dailyIndicators.smas = calculateSMAs(dailyPrices, fastSma, slowSma);
+                }
+                if (strategy === 'rsi' || strategy === 'hybrid') {
+                    const rsiPeriod = parseInt(document.getElementById('rsi-period').value, 10);
+                    dailyIndicators.rsi = calculateRSI(dailyPrices, rsiPeriod);
+                    backtestParams.rsiOversold = parseInt(document.getElementById('rsi-oversold').value, 10);
+                }
+                if (strategy === 'bollinger') {
+                    const period = parseInt(document.getElementById('bollinger-period').value, 10);
+                    const stddev = parseFloat(document.getElementById('bollinger-stddev').value);
+                    dailyIndicators.bollinger = calculateBollingerBands(dailyPrices, period, stddev);
+                }
 
                 // Fetch intraday data
                 const intradayData = await fetchIntradayData(ticker, startDate, endDate, apiKey, (progress) => loaderText.textContent = progress);
@@ -569,16 +723,16 @@
                     throw new Error("No intraday data was found for the selected date range.");
                 }
                 backtestParams.intradayData = filteredIntradayData;
-                backtestParams.dailyIndicators = dailyIndicators;
 
                 // Run backtest
                 loaderText.textContent = 'Running backtest...';
                 const backtestResults = runBacktest(backtestParams);
                 
                 // Display results
-                displayResults(backtestResults);
+                displayResults(backtestResults, filteredIntradayData);
                 summary.classList.remove('hidden');
                 tradeLogContainer.classList.remove('hidden');
+                chartContainer.classList.remove('hidden');
 
             } catch (err) {
                 errorMessage.textContent = err.message;
