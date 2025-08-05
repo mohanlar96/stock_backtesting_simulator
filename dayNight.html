@@ -25,7 +25,7 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Intraday Trading Simulator</h1>
-            <p class="mt-2 text-md text-gray-600">Strategy: Buy at a specific time, sell the next morning. Now with data caching!</p>
+            <p class="mt-2 text-md text-gray-600">Strategy: Buy at a specific time, sell the next morning only if profitable. Now with data caching!</p>
         </header>
 
         <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto">
@@ -211,7 +211,9 @@
                 const buyPrice = intradayData[buyTimestamp]?.close;
                 const sellPrice = intradayData[sellTimestamp]?.close;
 
-                if (buyPrice && sellPrice) {
+                // --- MODIFIED LOGIC ---
+                // Check if prices exist and if the trade is profitable
+                if (buyPrice && sellPrice && sellPrice > buyPrice) {
                     const investment = useCompounding ? currentCapital : initialCapital;
                     const shares = investment / buyPrice;
                     const profit = (sellPrice - buyPrice) * shares;
@@ -224,6 +226,7 @@
                     tradeData.capitalAfter = currentCapital;
                     trades.push(tradeData);
                 }
+                // If not profitable, the trade is skipped and capital remains unchanged for the next cycle.
             }
             return { trades, finalCapital: currentCapital };
         }
@@ -232,6 +235,7 @@
             const { trades, finalCapital } = results;
             const totalReturn = initialCapital !== 0 ? ((finalCapital - initialCapital) / initialCapital * 100) : 0;
             const totalTrades = trades.length;
+            // Win rate for this strategy will always be 100% of completed trades, but we can keep it for consistency.
             const winningTrades = trades.filter(t => t.profit > 0).length;
             const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100).toFixed(1) : 'N/A';
 
@@ -323,10 +327,10 @@
                         onProgress(`Loaded ${ticker} (${yearMonth}) from cache.`);
                     } else {
                         // Add a delay between API calls to respect rate limits (25/day)
-                        // if (apiCallCount > 0) {
-                        //     onProgress(`Waiting to avoid API rate limit... (15s)`);
-                        //     await new Promise(resolve => setTimeout(resolve, 15000));
-                        // }
+                        if (apiCallCount > 0) {
+                            onProgress(`Waiting to avoid API rate limit... (15s)`);
+                            await new Promise(resolve => setTimeout(resolve, 15000));
+                        }
                         onProgress(`Fetching data for ${ticker} (${yearMonth}) from API...`);
                         monthData = await fetchMonthlyIntradayData(ticker, yearMonth, apiKey);
                         await saveToCache(db, cacheKey, monthData);
