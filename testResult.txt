@@ -4,7 +4,7 @@ Distribute your portfolio vs put everythin in for big companies ( everything in 
 
 Max loss percentage seen -17 % 
 
-
+Always use SMA (entry 200) and exit should be less than 200 maybe 100 ?? 
 
 
 

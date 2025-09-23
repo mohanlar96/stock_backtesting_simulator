@@ -162,7 +162,7 @@
             </div>
             <div class="space-y-1">
                 <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (Exit)</label>
-                <input type="number" id="smaPeriodExit" value="50"
+                <input type="number" id="smaPeriodExit" value="21"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -181,6 +181,12 @@
             <div class="space-y-1">
                 <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days)</label>
                 <input type="number" id="rsPeriod" value="90"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="maxPositions" class="block text-sm font-medium text-slate-300">Max Concurrent Positions</label>
+                <input type="number" id="maxPositions" value="1"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -255,6 +261,7 @@
         const daysAboveSMAInput = document.getElementById('daysAboveSMA');
         const daysUnderSMAInput = document.getElementById('daysUnderSMA');
         const rsPeriodInput = document.getElementById('rsPeriod'); // Re-added this line
+        const maxPositionsInput = document.getElementById('maxPositions');
         const loadingDiv = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
         const totalReturnEl = document.getElementById('total-return');
@@ -439,10 +446,10 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit) => {
-            let position = null;
+        const runStrategy = (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit, maxPositions) => {
+            let positions = []; // Array of active positions { ticker, shares, tradeLogIndex }
             let trades = [];
-            let currentCapital = investmentAmount;
+            let cash = investmentAmount;
 
             const daysAboveSMA = {};
             const daysUnderSMA = {};
@@ -452,7 +459,7 @@
             });
 
             console.log("Running strategy...");
-            console.log(`Initial Capital: $${currentCapital.toFixed(2)}`);
+            console.log(`Initial Capital: $${cash.toFixed(2)}, Max Positions: ${maxPositions}`);
 
             for (const date of masterDateList) {
                 // First, update all counters for all tickers for the current date
@@ -478,30 +485,51 @@
                     }
                 });
 
-                // Now, handle logic
-                if (position) { // IN A TRADE
-                    const heldTicker = position.ticker;
-                    const day = allData[heldTicker]?.find(d => d.date === date);
+                // --- A. CHECK FOR EXITS on existing positions ---
+                const positionsToExitIndexes = [];
+                positions.forEach((pos, index) => {
+                    const day = allData[pos.ticker]?.find(d => d.date === date);
                     if (day) {
-                        const stopLoss = daysUnderSMA[heldTicker] >= daysUnderSMAForExit;
+                        const stopLoss = daysUnderSMA[pos.ticker] >= daysUnderSMAForExit;
                         if (stopLoss || date === masterDateList[masterDateList.length - 1]) {
-                            const trade = trades[position.tradeLogIndex];
-                            trade.exitDate = day.date;
-                            trade.exitPrice = day.close;
-
-                            const result = (trade.exitPrice - trade.entryPrice) * trade.shares;
-                            trade.result = result;
-                            trade.resultPercentage = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
-                            currentCapital += result;
-                            trade.exitAmount = currentCapital;
-
-                            console.log(`%cTrade Exited ${heldTicker} on ${day.date} at ${day.close}. P/L: ${result.toFixed(2)}. New Capital: ${currentCapital.toFixed(2)}`, 'color: red');
-                            position = null;
+                            positionsToExitIndexes.push(index);
                         }
                     }
-                } else { // IDLE, LOOKING FOR A TRADE
+                });
+
+                // Process exits (iterate backwards to not mess up indexes)
+                for (let i = positionsToExitIndexes.length - 1; i >= 0; i--) {
+                    const index = positionsToExitIndexes[i];
+                    const pos = positions[index];
+                    const trade = trades[pos.tradeLogIndex];
+                    const exitDay = allData[pos.ticker].find(d => d.date === date);
+
+                    const exitValue = pos.shares * exitDay.close;
+                    cash += exitValue;
+
+                    trade.exitDate = exitDay.date;
+                    trade.exitPrice = exitDay.close;
+                    trade.exitAmount = exitValue;
+
+                    const result = exitValue - trade.entryAmount;
+                    trade.result = result;
+                    trade.resultPercentage = (result / trade.entryAmount) * 100;
+
+                    console.log(`%cTrade Exited ${trade.ticker} on ${exitDay.date} at ${exitDay.close}. P/L: ${result.toFixed(2)}. New Cash: ${cash.toFixed(2)}`, 'color: red');
+                    
+                    positions.splice(index, 1);
+                }
+
+                // --- B. LOOK FOR NEW ENTRIES ---
+                const openSlots = maxPositions - positions.length;
+                // Do not look for new entries on the last day of the simulation.
+                if (openSlots > 0 && cash > 1 && date !== masterDateList[masterDateList.length - 1]) {
                     const candidates = [];
+                    const activeTickers = positions.map(p => p.ticker);
+
                     tickers.forEach(ticker => {
+                        if (activeTickers.includes(ticker)) return; // Already in this stock
+
                         const day = allData[ticker]?.find(d => d.date === date);
                         if (day && day.smaEntry && day.relativeStrength) {
                             if (daysAboveSMA[ticker] >= daysAboveSMAForEntry) {
@@ -512,32 +540,36 @@
 
                     if (candidates.length > 0) {
                         candidates.sort((a, b) => b.rs - a.rs); // Sort by RS descending
-                        const bestCandidate = candidates[0];
-                        const { ticker, dayData } = bestCandidate;
 
-                        const shares = currentCapital / dayData.close;
-                        position = {
-                            ticker: ticker,
-                            entryDate: dayData.date,
-                            entryPrice: dayData.close,
-                            shares: shares,
-                            tradeLogIndex: trades.length
-                        };
-                        trades.push({
-                            ticker: ticker,
-                            entryDate: dayData.date,
-                            entryPrice: dayData.close,
-                            entryAmount: currentCapital,
-                            exitAmount: null,
-                            shares: shares,
-                            exitDate: null,
-                            exitPrice: null,
-                            result: null,
-                            resultPercentage: null
+                        const tradesToEnter = candidates.slice(0, openSlots);
+                        const capitalPerTrade = cash / tradesToEnter.length; // Distribute available cash equally
+
+                        tradesToEnter.forEach(candidate => {
+                            const { ticker, dayData } = candidate;
+                            const shares = capitalPerTrade / dayData.close;
+
+                            positions.push({ ticker: ticker, shares: shares, tradeLogIndex: trades.length });
+
+                            trades.push({
+                                ticker: ticker,
+                                entryDate: dayData.date,
+                                entryPrice: dayData.close,
+                                entryAmount: capitalPerTrade,
+                                exitAmount: null,
+                                shares: shares,
+                                exitDate: null,
+                                exitPrice: null,
+                                result: null,
+                                resultPercentage: null
+                            });
+                            
+                            cash -= capitalPerTrade;
+                            console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with $${capitalPerTrade.toFixed(2)}`, 'color: green');
+
+                            // Reset counters for the entered stock to prevent immediate re-entry signals
+                            daysAboveSMA[ticker] = 0;
+                            daysUnderSMA[ticker] = 0;
                         });
-                        console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close}`, 'color: green');
-                        // Reset counters after entry
-                        tickers.forEach(t => { daysAboveSMA[t] = 0; daysUnderSMA[t] = 0; });
                     }
                 }
             }
@@ -570,7 +602,8 @@
                         const currentEntry = new Date(trade.entryDate);
                         const previousExit = new Date(previousTrade.exitDate);
                         const diffTime = currentEntry - previousExit;
-                        idleDaysText = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                        const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                        idleDaysText = days < 0 ? 0 : days; // If trades overlap, consider idle days as 0.
                     }
                 } else {
                     const simStartDate = new Date(startDateInput.value);
@@ -638,6 +671,7 @@
                 const daysAboveSMA = parseInt(daysAboveSMAInput.value);
                 const daysUnderSMA = parseInt(daysUnderSMAInput.value);
                 const rsPeriod = parseInt(rsPeriodInput.value);
+                const maxPositions = parseInt(maxPositionsInput.value);
 
                 // To ensure indicators are "warmed up", fetch data from before the start date.
                 const lookbackDays = Math.max(smaPeriodEntry, smaPeriodExit, rsPeriod) + 10; // Add a small buffer
@@ -680,7 +714,7 @@
                     .sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
-                const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderSMA);
+                const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderSMA, maxPositions);
 
                 // Display the results
                 displayResults(trades);
