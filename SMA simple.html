@@ -107,7 +107,7 @@
             </div>
             <div class="space-y-1">
                 <label for="investmentAmount" class="block text-sm font-medium text-slate-300">Initial Capital ($)</label>
-                <input type="number" id="investmentAmount" value="1000"
+                <input type="number" id="investmentAmount" value="100"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -191,8 +191,10 @@
                         <tr class="text-xs font-medium text-slate-300 uppercase tracking-wider">
                             <th class="px-2 py-3 text-left">Entry Date</th>
                             <th class="px-2 py-3 text-left">Entry Price</th>
+                            <th class="px-2 py-3 text-left">Entry Amount ($)</th>
                             <th class="px-2 py-3 text-left">Exit Date</th>
                             <th class="px-2 py-3 text-left">Exit Price</th>
+                            <th class="px-2 py-3 text-left">Exit Amount ($)</th>
                             <th class="px-2 py-3 text-left">Result ($)</th>
                             <th class="px-2 py-3 text-left">Result (%)</th>
                         </tr>
@@ -385,6 +387,8 @@
                         trades.push({
                             entryDate: day.date,
                             entryPrice: day.close,
+                            entryAmount: currentCapital,
+                            exitAmount: null,
                             shares: shares,
                             exitDate: null,
                             exitPrice: null,
@@ -409,6 +413,7 @@
                         trade.result = result;
                         trade.resultPercentage = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
                         currentCapital += result;
+                        trade.exitAmount = currentCapital;
 
                         console.log(`%cTrade Exited on ${day.date} at ${day.close}. P/L: ${result.toFixed(2)}. New Capital: ${currentCapital.toFixed(2)}`, 'color: red');
                         position = null;
@@ -440,8 +445,10 @@
                 row.innerHTML = `
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryDate}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryPrice.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryAmount.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.result !== null ? '$' + trade.result.toFixed(2) : 'Open'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage !== null ? trade.resultPercentage.toFixed(2) + '%' : 'Open'}</td>
         `;
