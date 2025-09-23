@@ -1,12 +1,10 @@
-Entry Rule: Buy when the stock's closing price is supported by the 21-day SMA for 2 days.
-Exit Rule (Stop-Loss): Sell when the stock's closing price is under the 21-day SMA for 2 consecutive day.
+I backtest on mid cap vs big company -> in both long term ( 10 years) , short term ( 5 years) , big companies win
 
-Return 58 $
+Distribute your portfolio vs put everythin in for big companies ( everything in wins )
 
 
-Entry Rule: Buy when the stock's closing price is supported by the 21-day SMA for 2 days.
-Exit Rule (Stop-Loss): Sell when the stock's closing price is under the 21-day SMA for 1 consecutive day.
 
-Return 58 $
+
+
 
 
