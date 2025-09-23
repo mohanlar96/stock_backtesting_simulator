@@ -215,7 +215,7 @@
                         <tr class="text-xs font-medium text-slate-300 uppercase tracking-wider">
                             <th class="px-2 py-3 text-left">Ticker</th>
                             <th class="px-2 py-3 text-left">Entry Date</th>
-                            <th class="px-2 py-3 text-left">Idle Days</th>
+                            <th class="px-2 py-3 text-left">Idle Days(capital)</th>
                             <th class="px-2 py-3 text-left">Entry Price</th>
                             <th class="px-2 py-3 text-left">Entry Amount ($)</th>
                             <th class="px-2 py-3 text-left">Exit Date</th>
@@ -269,8 +269,8 @@
         });
 
         // Set default dates
-        startDateInput.value = '2022-01-01';
-        endDateInput.value = '2025-01-01';
+        startDateInput.value = '2020-01-01';
+        endDateInput.value = '2024-12-01';
 
         // Function to handle fetching historical data in one call
         const fetchHistoricalData = async (ticker, startDate, endDate, apiKey) => {
@@ -616,12 +616,21 @@
                 const daysUnderSMA = parseInt(daysUnderSMAInput.value);
                 const rsPeriod = parseInt(rsPeriodInput.value);
 
+                // To ensure indicators are "warmed up", fetch data from before the start date.
+                const lookbackDays = Math.max(smaPeriod, rsPeriod) + 10; // Add a small buffer
+                const fetchStartDateObj = new Date(startDate);
+                // A simple approach is to subtract calendar days. A factor of 1.5 helps account for weekends/holidays.
+                fetchStartDateObj.setDate(fetchStartDateObj.getDate() - Math.round(lookbackDays * 1.5));
+                const fetchStartDate = fetchStartDateObj.toISOString().split('T')[0];
+
+                console.log(`User date range: ${startDate} to ${endDate}. Fetching data from: ${fetchStartDate}`);
+
                 if (!API_KEY) {
                     throw new Error('Please enter a valid API key in the input field above.');
                 }
                 
                 const allData = {};
-                const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, startDate, endDate, API_KEY));
+                const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, fetchStartDate, endDate, API_KEY));
                 const results = await Promise.all(dataPromises);
 
                 results.forEach((data, index) => {
@@ -643,7 +652,9 @@
                 Object.values(allData).forEach(data => {
                     data.forEach(day => allDates.add(day.date));
                 });
-                const masterDateList = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
+                const masterDateList = Array.from(allDates)
+                    .filter(date => date >= startDate && date <= endDate) // Filter for the user's selected backtest range
+                    .sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
                 const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderSMA);
