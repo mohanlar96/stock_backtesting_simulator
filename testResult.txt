@@ -2,7 +2,7 @@ I backtest on mid cap vs big company -> in both long term ( 10 years) , short te
 
 Distribute your portfolio vs put everythin in for big companies ( everything in wins )
 
-
+Max loss percentage seen -17 % 
 
 
 
