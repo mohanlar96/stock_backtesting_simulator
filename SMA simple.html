@@ -87,11 +87,14 @@
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     placeholder="Enter your API key here" required>
             </div>
-            <div class="space-y-1">
-                <label for="ticker" class="block text-sm font-medium text-slate-300">Stock Ticker</label>
-                <input type="text" id="ticker" value="AAPL"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    placeholder="e.g. AAPL" required>
+            <div class="col-span-full grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div><label for="ticker1" class="block text-sm font-medium text-slate-300">Ticker 1</label><input type="text" id="ticker1" value="AAPL" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker2" class="block text-sm font-medium text-slate-300">Ticker 2</label><input type="text" id="ticker2" value="GOOGL" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker3" class="block text-sm font-medium text-slate-300">Ticker 3</label><input type="text" id="ticker3" value="MSFT" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker4" class="block text-sm font-medium text-slate-300">Ticker 4</label><input type="text" id="ticker4" value="AMZN" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker5" class="block text-sm font-medium text-slate-300">Ticker 5</label><input type="text" id="ticker5" value="NVDA" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker6" class="block text-sm font-medium text-slate-300">Ticker 6</label><input type="text" id="ticker6" value="META" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+                <div><label for="ticker7" class="block text-sm font-medium text-slate-300">Ticker 7</label><input type="text" id="ticker7" value="TSLA" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
             </div>
             <div class="space-y-1">
                 <label for="startDate" class="block text-sm font-medium text-slate-300">Start Date</label>
@@ -125,7 +128,7 @@
             </div>
             <div class="space-y-1">
                 <label for="smaPeriod" class="block text-sm font-medium text-slate-300">SMA Period (days)</label>
-                <input type="number" id="smaPeriod" value="21"
+                <input type="number" id="smaPeriod" value="200"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -137,7 +140,13 @@
             </div>
             <div class="space-y-1">
                 <label for="daysUnderSMA" class="block text-sm font-medium text-slate-300">Days Under SMA (Exit)</label>
-                <input type="number" id="daysUnderSMA" value="1"
+                <input type="number" id="daysUnderSMA" value="2"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days)</label>
+                <input type="number" id="rsPeriod" value="90"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -189,6 +198,7 @@
                 <table class="min-w-full divide-y divide-slate-700">
                     <thead>
                         <tr class="text-xs font-medium text-slate-300 uppercase tracking-wider">
+                            <th class="px-2 py-3 text-left">Ticker</th>
                             <th class="px-2 py-3 text-left">Entry Date</th>
                             <th class="px-2 py-3 text-left">Idle Days</th>
                             <th class="px-2 py-3 text-left">Entry Price</th>
@@ -216,7 +226,6 @@
         // DOM elements
         const runBacktestButton = document.getElementById('runBacktestButton');
         const apiKeyInput = document.getElementById('apiKey');
-        const tickerInput = document.getElementById('ticker');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         const investmentAmountInput = document.getElementById('investmentAmount');
@@ -225,6 +234,7 @@
         const smaPeriodInput = document.getElementById('smaPeriod');
         const daysAboveSMAInput = document.getElementById('daysAboveSMA');
         const daysUnderSMAInput = document.getElementById('daysUnderSMA');
+        const rsPeriodInput = document.getElementById('rsPeriod');
         const bbPeriodInput = document.getElementById('bbPeriod');
         const stdDevInput = document.getElementById('stdDev');
         const loadingDiv = document.getElementById('loading');
@@ -290,7 +300,7 @@
         };
 
         // Calculation of indicators (SMA, RSI, Bollinger Bands)
-        const calculateIndicators = (data, smaPeriod, bbPeriod, stdDevMultiplier) => {
+        const calculateIndicators = (data, smaPeriod, bbPeriod, stdDevMultiplier, rsPeriod) => {
             let gains = [];
             let losses = [];
             let avgGain = 0;
@@ -339,10 +349,20 @@
                     }
                 }
 
+                // Relative Strength Calculation
+                let relativeStrength = null;
+                if (i >= rsPeriod) {
+                    const pastPrice = data[i - rsPeriod].close;
+                    if (pastPrice > 0) {
+                        relativeStrength = ((d.close - pastPrice) / pastPrice) * 100;
+                    }
+                }
+
                 return {
                     ...d,
                     sma,
                     rsi,
+                    relativeStrength,
                     upperBand,
                     lowerBand
                 };
@@ -351,44 +371,85 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = (data, smaPeriod, rsiOversold, rsiOverbought, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit) => {
+        const runStrategy = (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit) => {
             let position = null;
             let trades = [];
-            let daysAboveSMA = 0;
-            let daysUnderSMA = 0;
             let currentCapital = investmentAmount;
+
+            const daysAboveSMA = {};
+            const daysUnderSMA = {};
+            tickers.forEach(t => {
+                daysAboveSMA[t] = 0;
+                daysUnderSMA[t] = 0;
+            });
 
             console.log("Running strategy...");
             console.log(`Initial Capital: $${currentCapital.toFixed(2)}`);
 
-            for (let i = 1; i < data.length; i++) {
-                const day = data[i];
-
-                if (day.sma) {
-                    if (day.close >= day.sma) {
-                        daysAboveSMA++;
-                        daysUnderSMA = 0;
-                    } else {
-                        daysUnderSMA++;
-                        daysAboveSMA = 0;
+            for (const date of masterDateList) {
+                // First, update all counters for all tickers for the current date
+                tickers.forEach(ticker => {
+                    const day = allData[ticker]?.find(d => d.date === date);
+                    if (day && day.sma) {
+                        if (day.close >= day.sma) {
+                            daysAboveSMA[ticker]++;
+                            daysUnderSMA[ticker] = 0;
+                        } else {
+                            daysUnderSMA[ticker]++;
+                            daysAboveSMA[ticker] = 0;
+                        }
                     }
-                }
+                });
 
-                console.log(`Date: ${day.date}, Close: ${day.close}, SMA: ${day.sma}, RSI: ${day.rsi}, daysAboveSMA: ${daysAboveSMA}, daysUnderSMA: ${daysUnderSMA}`);
+                // Now, handle logic
+                if (position) { // IN A TRADE
+                    const heldTicker = position.ticker;
+                    const day = allData[heldTicker]?.find(d => d.date === date);
+                    if (day) {
+                        const stopLoss = daysUnderSMA[heldTicker] >= daysUnderSMAForExit;
+                        if (stopLoss || date === masterDateList[masterDateList.length - 1]) {
+                            const trade = trades[position.tradeLogIndex];
+                            trade.exitDate = day.date;
+                            trade.exitPrice = day.close;
 
-                if (!position && day.sma && day.rsi) {
-                    //if (daysAboveSMA >= 2 && day.rsi < rsiOversold) {
-                    if (daysAboveSMA >= daysAboveSMAForEntry) {
-                        const shares = currentCapital / day.close;
+                            const result = (trade.exitPrice - trade.entryPrice) * trade.shares;
+                            trade.result = result;
+                            trade.resultPercentage = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
+                            currentCapital += result;
+                            trade.exitAmount = currentCapital;
+
+                            console.log(`%cTrade Exited ${heldTicker} on ${day.date} at ${day.close}. P/L: ${result.toFixed(2)}. New Capital: ${currentCapital.toFixed(2)}`, 'color: red');
+                            position = null;
+                        }
+                    }
+                } else { // IDLE, LOOKING FOR A TRADE
+                    const candidates = [];
+                    tickers.forEach(ticker => {
+                        const day = allData[ticker]?.find(d => d.date === date);
+                        if (day && day.sma && day.relativeStrength) {
+                            if (daysAboveSMA[ticker] >= daysAboveSMAForEntry) {
+                                candidates.push({ ticker, rs: day.relativeStrength, dayData: day });
+                            }
+                        }
+                    });
+
+                    if (candidates.length > 0) {
+                        candidates.sort((a, b) => b.rs - a.rs); // Sort by RS descending
+                        const bestCandidate = candidates[0];
+                        const { ticker, dayData } = bestCandidate;
+
+                        const shares = currentCapital / dayData.close;
                         position = {
-                            entryDate: day.date,
-                            entryPrice: day.close,
+                            ticker: ticker,
+                            entryDate: dayData.date,
+                            entryPrice: dayData.close,
                             shares: shares,
                             tradeLogIndex: trades.length
                         };
                         trades.push({
-                            entryDate: day.date,
-                            entryPrice: day.close,
+                            ticker: ticker,
+                            entryDate: dayData.date,
+                            entryPrice: dayData.close,
                             entryAmount: currentCapital,
                             exitAmount: null,
                             shares: shares,
@@ -397,30 +458,9 @@
                             result: null,
                             resultPercentage: null
                         });
-                        console.log(`%cTrade Entered on ${day.date} at ${day.close}`, 'color: green');
-                        daysAboveSMA = 0;
-                        daysUnderSMA = 0;
-                    }
-                }
-
-                if (position) {
-                    const stopLoss = daysUnderSMA >= daysUnderSMAForExit;
-
-                    if (stopLoss || i === data.length - 1) {
-                        const trade = trades[position.tradeLogIndex];
-                        trade.exitDate = day.date;
-                        trade.exitPrice = day.close;
-
-                        const result = (trade.exitPrice - trade.entryPrice) * trade.shares;
-                        trade.result = result;
-                        trade.resultPercentage = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
-                        currentCapital += result;
-                        trade.exitAmount = currentCapital;
-
-                        console.log(`%cTrade Exited on ${day.date} at ${day.close}. P/L: ${result.toFixed(2)}. New Capital: ${currentCapital.toFixed(2)}`, 'color: red');
-                        position = null;
-                        daysAboveSMA = 0;
-                        daysUnderSMA = 0;
+                        console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close}`, 'color: green');
+                        // Reset counters after entry
+                        tickers.forEach(t => { daysAboveSMA[t] = 0; daysUnderSMA[t] = 0; });
                     }
                 }
             }
@@ -430,7 +470,7 @@
             return trades;
         };
 
-        const displayResults = (data, trades) => {
+        const displayResults = (trades) => {
             const winningTrades = trades.filter(t => t.result !== null && t.result > 0);
             const totalReturn = trades.reduce((sum, t) => sum + (t.result || 0), 0);
             const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
@@ -472,6 +512,7 @@
                 }
 
                 row.innerHTML = `
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300 font-bold">${trade.ticker}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryDate}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${idleDaysText}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryPrice.toFixed(2)}</td>
@@ -505,40 +546,57 @@
             }
 
             try {
-                const ticker = tickerInput.value.toUpperCase();
+                const tickerInputs = document.querySelectorAll('.ticker-input');
+                const tickers = Array.from(tickerInputs).map(input => input.value.toUpperCase().trim()).filter(t => t);
+
+                if (tickers.length === 0) {
+                    throw new Error('Please enter at least one ticker.');
+                }
+
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
                 const investmentAmount = parseFloat(investmentAmountInput.value);
-                const rsiOversold = parseFloat(rsiOversoldInput.value);
-                const rsiOverbought = parseFloat(rsiOverboughtInput.value);
                 const smaPeriod = parseInt(smaPeriodInput.value);
                 const daysAboveSMA = parseInt(daysAboveSMAInput.value);
                 const daysUnderSMA = parseInt(daysUnderSMAInput.value);
+                const rsPeriod = parseInt(rsPeriodInput.value);
                 const bbPeriod = parseInt(bbPeriodInput.value);
                 const stdDevMultiplier = parseFloat(stdDevInput.value);
 
                 if (!API_KEY) {
                     throw new Error('Please enter a valid API key in the input field above.');
                 }
+                
+                const allData = {};
+                const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, startDate, endDate, API_KEY));
+                const results = await Promise.all(dataPromises);
 
-                // Fetch all historical data in one call
-                const historicalData = await fetchHistoricalData(ticker, startDate, endDate, API_KEY);
+                results.forEach((data, index) => {
+                    const ticker = tickers[index];
+                    if (data && data.length > 0) {
+                        const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                        allData[ticker] = calculateIndicators(sortedData, smaPeriod, bbPeriod, stdDevMultiplier, rsPeriod);
+                    } else {
+                        console.warn(`No data returned for ticker: ${ticker}`);
+                    }
+                });
 
-                if (!historicalData || historicalData.length === 0) {
-                    throw new Error('No historical data found for this ticker and date range. The API may have limitations on data or your key may not support the date range. Please try another ticker or a shorter date range.');
+                if (Object.keys(allData).length === 0) {
+                    throw new Error('Could not fetch data for any of the provided tickers.');
                 }
 
-                // The historical data is returned in reverse chronological order, so we reverse it.
-                const sortedData = historicalData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                // Calculate indicators
-                const dailyData = calculateIndicators(sortedData, smaPeriod, bbPeriod, stdDevMultiplier);
+                // Create a master list of all unique trading days across all tickers
+                const allDates = new Set();
+                Object.values(allData).forEach(data => {
+                    data.forEach(day => allDates.add(day.date));
+                });
+                const masterDateList = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
-                const trades = runStrategy(dailyData, smaPeriod, rsiOversold, rsiOverbought, investmentAmount, daysAboveSMA, daysUnderSMA);
+                const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderSMA);
 
                 // Display the results
-                displayResults(dailyData, trades);
+                displayResults(trades);
 
             } catch (error) {
                 console.error("Backtesting failed:", error);
