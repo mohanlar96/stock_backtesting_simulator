@@ -68,11 +68,11 @@
             <ul class="list-disc list-inside space-y-2 text-sm text-slate-400">
                 <li>
                     <span class="font-semibold text-slate-200">Entry Rule:</span> Buy when the stock's closing price is
-                    supported by the 21-day SMA for 2 days, AND the RSI is below 40.
+                    supported by the SMA for a configurable number of days.
                 </li>
                 <li>
                     <span class="font-semibold text-slate-200">Exit Rule (Stop-Loss):</span> Sell when the stock's
-                    closing price is under the 21-day SMA for 2 consecutive days.
+                    closing price is under the SMA for a configurable number of consecutive days.
                 </li>
                 
             </ul>
@@ -106,6 +106,12 @@
                     required>
             </div>
             <div class="space-y-1">
+                <label for="investmentAmount" class="block text-sm font-medium text-slate-300">Initial Capital ($)</label>
+                <input type="number" id="investmentAmount" value="1000"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
                 <label for="rsiOversold" class="block text-sm font-medium text-slate-300">RSI Oversold Level</label>
                 <input type="number" id="rsiOversold" value="40"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
@@ -120,6 +126,18 @@
             <div class="space-y-1">
                 <label for="smaPeriod" class="block text-sm font-medium text-slate-300">SMA Period (days)</label>
                 <input type="number" id="smaPeriod" value="21"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above SMA (Entry)</label>
+                <input type="number" id="daysAboveSMA" value="2"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="daysUnderSMA" class="block text-sm font-medium text-slate-300">Days Under SMA (Exit)</label>
+                <input type="number" id="daysUnderSMA" value="1"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -197,9 +215,12 @@
         const tickerInput = document.getElementById('ticker');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
+        const investmentAmountInput = document.getElementById('investmentAmount');
         const rsiOversoldInput = document.getElementById('rsiOversold');
         const rsiOverboughtInput = document.getElementById('rsiOverbought');
         const smaPeriodInput = document.getElementById('smaPeriod');
+        const daysAboveSMAInput = document.getElementById('daysAboveSMA');
+        const daysUnderSMAInput = document.getElementById('daysUnderSMA');
         const bbPeriodInput = document.getElementById('bbPeriod');
         const stdDevInput = document.getElementById('stdDev');
         const loadingDiv = document.getElementById('loading');
@@ -326,13 +347,15 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = (data, smaPeriod, rsiOversold, rsiOverbought) => {
+        const runStrategy = (data, smaPeriod, rsiOversold, rsiOverbought, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit) => {
             let position = null;
             let trades = [];
             let daysAboveSMA = 0;
             let daysUnderSMA = 0;
+            let currentCapital = investmentAmount;
 
             console.log("Running strategy...");
+            console.log(`Initial Capital: $${currentCapital.toFixed(2)}`);
 
             for (let i = 1; i < data.length; i++) {
                 const day = data[i];
@@ -351,16 +374,18 @@
 
                 if (!position && day.sma && day.rsi) {
                     //if (daysAboveSMA >= 2 && day.rsi < rsiOversold) {
-                    if (daysAboveSMA >= 2) {
-
+                    if (daysAboveSMA >= daysAboveSMAForEntry) {
+                        const shares = currentCapital / day.close;
                         position = {
                             entryDate: day.date,
                             entryPrice: day.close,
+                            shares: shares,
                             tradeLogIndex: trades.length
                         };
                         trades.push({
                             entryDate: day.date,
                             entryPrice: day.close,
+                            shares: shares,
                             exitDate: null,
                             exitPrice: null,
                             result: null,
@@ -373,12 +398,19 @@
                 }
 
                 if (position) {
-                    const stopLoss = daysUnderSMA >= 2;
+                    const stopLoss = daysUnderSMA >= daysUnderSMAForExit;
 
                     if (stopLoss || i === data.length - 1) {
-                        trades[position.tradeLogIndex].exitDate = day.date;
-                        trades[position.tradeLogIndex].exitPrice = day.close;
-                        console.log(`%cTrade Exited on ${day.date} at ${day.close}`, 'color: red');
+                        const trade = trades[position.tradeLogIndex];
+                        trade.exitDate = day.date;
+                        trade.exitPrice = day.close;
+
+                        const result = (trade.exitPrice - trade.entryPrice) * trade.shares;
+                        trade.result = result;
+                        trade.resultPercentage = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
+                        currentCapital += result;
+
+                        console.log(`%cTrade Exited on ${day.date} at ${day.close}. P/L: ${result.toFixed(2)}. New Capital: ${currentCapital.toFixed(2)}`, 'color: red');
                         position = null;
                         daysAboveSMA = 0;
                         daysUnderSMA = 0;
@@ -387,14 +419,6 @@
             }
 
             console.log("Strategy run complete.");
-
-            trades.forEach(trade => {
-                if (trade.exitPrice !== null) {
-                    const result = trade.exitPrice - trade.entryPrice;
-                    trade.result = result;
-                    trade.resultPercentage = (result / trade.entryPrice) * 100;
-                }
-            });
 
             return trades;
         };
@@ -446,9 +470,12 @@
                 const ticker = tickerInput.value.toUpperCase();
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
+                const investmentAmount = parseFloat(investmentAmountInput.value);
                 const rsiOversold = parseFloat(rsiOversoldInput.value);
                 const rsiOverbought = parseFloat(rsiOverboughtInput.value);
                 const smaPeriod = parseInt(smaPeriodInput.value);
+                const daysAboveSMA = parseInt(daysAboveSMAInput.value);
+                const daysUnderSMA = parseInt(daysUnderSMAInput.value);
                 const bbPeriod = parseInt(bbPeriodInput.value);
                 const stdDevMultiplier = parseFloat(stdDevInput.value);
 
@@ -470,7 +497,7 @@
                 const dailyData = calculateIndicators(sortedData, smaPeriod, bbPeriod, stdDevMultiplier);
 
                 // Run the backtest strategy
-                const trades = runStrategy(dailyData, smaPeriod, rsiOversold, rsiOverbought);
+                const trades = runStrategy(dailyData, smaPeriod, rsiOversold, rsiOverbought, investmentAmount, daysAboveSMA, daysUnderSMA);
 
                 // Display the results
                 displayResults(dailyData, trades);
