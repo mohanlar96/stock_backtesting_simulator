@@ -190,11 +190,13 @@
                     <thead>
                         <tr class="text-xs font-medium text-slate-300 uppercase tracking-wider">
                             <th class="px-2 py-3 text-left">Entry Date</th>
+                            <th class="px-2 py-3 text-left">Idle Days</th>
                             <th class="px-2 py-3 text-left">Entry Price</th>
                             <th class="px-2 py-3 text-left">Entry Amount ($)</th>
                             <th class="px-2 py-3 text-left">Exit Date</th>
                             <th class="px-2 py-3 text-left">Exit Price</th>
                             <th class="px-2 py-3 text-left">Exit Amount ($)</th>
+                            <th class="px-2 py-3 text-left">Hold Days</th>
                             <th class="px-2 py-3 text-left">Result ($)</th>
                             <th class="px-2 py-3 text-left">Result (%)</th>
                         </tr>
@@ -439,16 +441,45 @@
             totalTradesEl.textContent = trades.length;
 
             tradeLogBody.innerHTML = '';
-            trades.forEach(trade => {
+            trades.forEach((trade, index) => {
                 const row = document.createElement('tr');
                 const pnlColor = (trade.result ?? 0) >= 0 ? 'text-green-500' : 'text-red-500';
+
+                // Calculate Idle Days
+                let idleDaysText = 'N/A';
+                if (index > 0) {
+                    const previousTrade = trades[index - 1];
+                    if (previousTrade.exitDate) {
+                        const currentEntry = new Date(trade.entryDate);
+                        const previousExit = new Date(previousTrade.exitDate);
+                        const diffTime = currentEntry - previousExit;
+                        idleDaysText = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                    }
+                } else {
+                    const simStartDate = new Date(startDateInput.value);
+                    const firstEntryDate = new Date(trade.entryDate);
+                    const diffTime = firstEntryDate - simStartDate;
+                    idleDaysText = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                }
+
+                // Calculate Hold Days
+                let holdDaysText = 'N/A';
+                if (trade.exitDate) {
+                    const entry = new Date(trade.entryDate);
+                    const exit = new Date(trade.exitDate);
+                    const diffTime = exit - entry;
+                    holdDaysText = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                }
+
                 row.innerHTML = `
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryDate}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${idleDaysText}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryPrice.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryAmount.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${holdDaysText}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.result !== null ? '$' + trade.result.toFixed(2) : 'Open'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage !== null ? trade.resultPercentage.toFixed(2) + '%' : 'Open'}</td>
         `;
