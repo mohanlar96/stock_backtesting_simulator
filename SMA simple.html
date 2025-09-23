@@ -53,6 +53,41 @@
                 transform: rotate(360deg);
             }
         }
+
+        .ticker-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #3b82f6;
+            /* bg-blue-600 */
+            color: white;
+            padding: 4px 8px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .ticker-tag-remove {
+            margin-left: 8px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .ticker-suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .ticker-suggestion-item:hover {
+            background-color: #3b82f6;
+            /* bg-blue-600 */
+        }
     </style>
 </head>
 
@@ -87,14 +122,19 @@
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     placeholder="Enter your API key here" required>
             </div>
-            <div class="col-span-full grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div><label for="ticker1" class="block text-sm font-medium text-slate-300">Ticker 1</label><input type="text" id="ticker1" value="AAPL" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker2" class="block text-sm font-medium text-slate-300">Ticker 2</label><input type="text" id="ticker2" value="GOOGL" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker3" class="block text-sm font-medium text-slate-300">Ticker 3</label><input type="text" id="ticker3" value="MSFT" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker4" class="block text-sm font-medium text-slate-300">Ticker 4</label><input type="text" id="ticker4" value="AMZN" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker5" class="block text-sm font-medium text-slate-300">Ticker 5</label><input type="text" id="ticker5" value="NVDA" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker6" class="block text-sm font-medium text-slate-300">Ticker 6</label><input type="text" id="ticker6" value="META" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
-                <div><label for="ticker7" class="block text-sm font-medium text-slate-300">Ticker 7</label><input type="text" id="ticker7" value="TSLA" class="ticker-input w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"></div>
+            <div class="col-span-full space-y-1">
+                <label for="tickerSearch" class="block text-sm font-medium text-slate-300">Search & Add Tickers</label>
+                <div class="relative">
+                    <input type="text" id="tickerSearch" placeholder="Type to search for a ticker (e.g., AAPL)"
+                        class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
+                    <div id="tickerSuggestions"
+                        class="absolute z-10 w-full bg-slate-800 border border-slate-700 rounded-md mt-1 max-h-60 overflow-y-auto hidden">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+                </div>
+                <div id="selectedTickers" class="flex flex-wrap gap-2 mt-2 pt-2">
+                    <!-- Selected tickers will appear here as tags -->
+                </div>
             </div>
             <div class="space-y-1">
                 <label for="startDate" class="block text-sm font-medium text-slate-300">Start Date</label>
@@ -113,18 +153,6 @@
                 <input type="number" id="investmentAmount" value="100"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="rsiOversold" class="block text-sm font-medium text-slate-300">RSI Oversold Level</label>
-                <input type="number" id="rsiOversold" value="40"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1" max="100">
-            </div>
-            <div class="space-y-1">
-                <label for="rsiOverbought" class="block text-sm font-medium text-slate-300">RSI Overbought Level</label>
-                <input type="number" id="rsiOverbought" value="70"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1" max="100">
             </div>
             <div class="space-y-1">
                 <label for="smaPeriod" class="block text-sm font-medium text-slate-300">SMA Period (days)</label>
@@ -147,19 +175,6 @@
             <div class="space-y-1">
                 <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days)</label>
                 <input type="number" id="rsPeriod" value="90"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="bbPeriod" class="block text-sm font-medium text-slate-300">Bollinger Band Period
-                    (days)</label>
-                <input type="number" id="bbPeriod" value="21"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="stdDev" class="block text-sm font-medium text-slate-300">Std Dev</label>
-                <input type="number" id="stdDev" value="2"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -229,20 +244,19 @@
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         const investmentAmountInput = document.getElementById('investmentAmount');
-        const rsiOversoldInput = document.getElementById('rsiOversold');
-        const rsiOverboughtInput = document.getElementById('rsiOverbought');
         const smaPeriodInput = document.getElementById('smaPeriod');
         const daysAboveSMAInput = document.getElementById('daysAboveSMA');
         const daysUnderSMAInput = document.getElementById('daysUnderSMA');
-        const rsPeriodInput = document.getElementById('rsPeriod');
-        const bbPeriodInput = document.getElementById('bbPeriod');
-        const stdDevInput = document.getElementById('stdDev');
+        const rsPeriodInput = document.getElementById('rsPeriod'); // Re-added this line
         const loadingDiv = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
         const totalReturnEl = document.getElementById('total-return');
         const winRateEl = document.getElementById('win-rate');
         const totalTradesEl = document.getElementById('total-trades');
         const tradeLogBody = document.getElementById('tradeLog');
+        const tickerSearchInput = document.getElementById('tickerSearch');
+        const tickerSuggestionsDiv = document.getElementById('tickerSuggestions');
+        const selectedTickersDiv = document.getElementById('selectedTickers');
 
         let myChart = null;
 
@@ -251,6 +265,7 @@
             if (savedApiKey) {
                 apiKeyInput.value = savedApiKey;
             }
+            initializeTickerInput();
         });
 
         // Set default dates
@@ -300,54 +315,12 @@
         };
 
         // Calculation of indicators (SMA, RSI, Bollinger Bands)
-        const calculateIndicators = (data, smaPeriod, bbPeriod, stdDevMultiplier, rsPeriod) => {
-            let gains = [];
-            let losses = [];
-            let avgGain = 0;
-            let avgLoss = 0;
-
+        const calculateIndicators = (data, smaPeriod, rsPeriod) => {
             const newData = data.map((d, i) => {
                 // SMA Calculation
                 const sma = i >= smaPeriod - 1 ?
                     data.slice(i - smaPeriod + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriod :
                     null;
-
-                // Bollinger Band Calculation
-                let upperBand = null;
-                let lowerBand = null;
-                if (i >= bbPeriod - 1) {
-                    const closes = data.slice(i - bbPeriod + 1, i + 1).map(item => item.close);
-                    const mean = closes.reduce((sum, val) => sum + val, 0) / bbPeriod;
-                    const stdDev = Math.sqrt(closes.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / bbPeriod);
-                    upperBand = mean + (stdDev * stdDevMultiplier);
-                    lowerBand = mean - (stdDev * stdDevMultiplier);
-                }
-
-                // RSI Calculation
-                let rsi = null;
-                if (i > 0) {
-                    const diff = d.close - data[i - 1].close;
-                    const gain = diff > 0 ? diff : 0;
-                    const loss = diff < 0 ? -diff : 0;
-
-                    if (i < 14) {
-                        gains.push(gain);
-                        losses.push(loss);
-                    } else if (i === 14) {
-                        avgGain = gains.reduce((a, b) => a + b) / 14;
-                        avgLoss = losses.reduce((a, b) => a + b) / 14;
-                    } else {
-                        avgGain = ((avgGain * 13) + gain) / 14;
-                        avgLoss = ((avgLoss * 13) + loss) / 14;
-                    }
-
-                    if (avgLoss !== 0) {
-                        const rs = avgGain / avgLoss;
-                        rsi = 100 - (100 / (1 + rs));
-                    } else if (avgGain !== 0) {
-                        rsi = 100;
-                    }
-                }
 
                 // Relative Strength Calculation
                 let relativeStrength = null;
@@ -361,13 +334,95 @@
                 return {
                     ...d,
                     sma,
-                    rsi,
                     relativeStrength,
-                    upperBand,
-                    lowerBand
                 };
             });
             return newData;
+        };
+
+        const addTickerTag = (symbol) => {
+            if (!symbol) return;
+            symbol = symbol.toUpperCase();
+
+            const existingTags = Array.from(selectedTickersDiv.querySelectorAll('.ticker-tag')).map(tag => tag.dataset.symbol);
+            if (existingTags.includes(symbol)) {
+                tickerSearchInput.value = '';
+                tickerSuggestionsDiv.classList.add('hidden');
+                return;
+            }
+
+            const tag = document.createElement('div');
+            tag.className = 'ticker-tag';
+            tag.dataset.symbol = symbol;
+            tag.innerHTML = `
+                <span>${symbol}</span>
+                <span class="ticker-tag-remove" onclick="this.parentElement.remove()">×</span>
+            `;
+            selectedTickersDiv.appendChild(tag);
+            tickerSearchInput.value = '';
+            tickerSuggestionsDiv.classList.add('hidden');
+        };
+
+        let debounceTimer;
+        const searchAndDisplaySuggestions = async (query) => {
+            if (!query) {
+                tickerSuggestionsDiv.classList.add('hidden');
+                return;
+            }
+
+            const API_KEY = apiKeyInput.value.trim();
+            if (!API_KEY) {
+                tickerSuggestionsDiv.innerHTML = `<div class="p-2 text-sm text-red-400">Please enter an API key to search.</div>`;
+                tickerSuggestionsDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://financialmodelingprep.com/api/v3/search-ticker?query=${query}&limit=10&apikey=${API_KEY}`);
+                if (!response.ok) throw new Error('API search failed.');
+                const data = await response.json();
+
+                tickerSuggestionsDiv.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(stock => {
+                        const item = document.createElement('div');
+                        item.className = 'ticker-suggestion-item';
+                        item.innerHTML = `<span class="font-bold">${stock.name}</span><span class="text-slate-400 ml-2">(${stock.symbol})</span>`;
+                        item.onclick = () => addTickerTag(stock.symbol);
+                        tickerSuggestionsDiv.appendChild(item);
+                    });
+                    tickerSuggestionsDiv.classList.remove('hidden');
+                } else {
+                    tickerSuggestionsDiv.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Ticker search error:", error);
+                tickerSuggestionsDiv.classList.add('hidden');
+            }
+        };
+
+        const initializeTickerInput = () => {
+            ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'TSLA'].forEach(addTickerTag);
+
+            tickerSearchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    searchAndDisplaySuggestions(tickerSearchInput.value);
+                }, 300); // 300ms debounce
+            });
+
+            tickerSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && tickerSearchInput.value) {
+                    e.preventDefault();
+                    addTickerTag(tickerSearchInput.value);
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!tickerSearchInput.parentElement.contains(e.target)) {
+                    tickerSuggestionsDiv.classList.add('hidden');
+                }
+            });
         };
 
         // Backtesting Strategy Logic
@@ -546,11 +601,11 @@
             }
 
             try {
-                const tickerInputs = document.querySelectorAll('.ticker-input');
-                const tickers = Array.from(tickerInputs).map(input => input.value.toUpperCase().trim()).filter(t => t);
+                const tickerTags = selectedTickersDiv.querySelectorAll('.ticker-tag');
+                const tickers = Array.from(tickerTags).map(tag => tag.dataset.symbol);
 
                 if (tickers.length === 0) {
-                    throw new Error('Please enter at least one ticker.');
+                    throw new Error('Please add at least one ticker.');
                 }
 
                 const startDate = startDateInput.value;
@@ -560,8 +615,6 @@
                 const daysAboveSMA = parseInt(daysAboveSMAInput.value);
                 const daysUnderSMA = parseInt(daysUnderSMAInput.value);
                 const rsPeriod = parseInt(rsPeriodInput.value);
-                const bbPeriod = parseInt(bbPeriodInput.value);
-                const stdDevMultiplier = parseFloat(stdDevInput.value);
 
                 if (!API_KEY) {
                     throw new Error('Please enter a valid API key in the input field above.');
@@ -575,7 +628,7 @@
                     const ticker = tickers[index];
                     if (data && data.length > 0) {
                         const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
-                        allData[ticker] = calculateIndicators(sortedData, smaPeriod, bbPeriod, stdDevMultiplier, rsPeriod);
+                        allData[ticker] = calculateIndicators(sortedData, smaPeriod, rsPeriod);
                     } else {
                         console.warn(`No data returned for ticker: ${ticker}`);
                     }
