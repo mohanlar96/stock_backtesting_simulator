@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Backtesting Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1000px;
+        }
+
+        .bg-gradient-glass {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #loading-spinner {
+            border-top-color: #3b82f6;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+
+        @-webkit-keyframes spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full flex flex-col items-center p-4 text-slate-100">
+
+    <div class="container w-full p-6 space-y-8 rounded-2xl bg-gradient-glass shadow-xl mt-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center tracking-tight text-white">Stock Backtesting Tool</h1>
+        <p class="text-center text-slate-400 max-w-2xl mx-auto">Analyze a trading strategy using historical stock data.
+            Adjust the parameters below to test different scenarios.</p>
+
+        <div class="space-y-4">
+            <h2 class="text-xl font-bold text-slate-200">Backtest Logic</h2>
+            <ul class="list-disc list-inside space-y-2 text-sm text-slate-400">
+                <li>
+                    <span class="font-semibold text-slate-200">Entry Rule:</span> Buy when the stock's closing price is
+                    supported by the 21-day SMA for 2 days, AND the RSI is below 40.
+                </li>
+                <li>
+                    <span class="font-semibold text-slate-200">Exit Rule (Stop-Loss):</span> Sell when the stock's
+                    closing price is under the 21-day SMA for 2 consecutive days.
+                </li>
+                
+            </ul>
+        </div>
+
+        <div id="backtestForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="col-span-full space-y-1">
+                <label for="apiKey" class="block text-sm font-medium text-slate-300">API Key <span
+                        class="text-xs text-red-400 font-normal">(Please provide your own key as the default is a
+                        placeholder)</span></label>
+                <input type="text" id="apiKey" value=""
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    placeholder="Enter your API key here" required>
+            </div>
+            <div class="space-y-1">
+                <label for="ticker" class="block text-sm font-medium text-slate-300">Stock Ticker</label>
+                <input type="text" id="ticker" value="AAPL"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    placeholder="e.g. AAPL" required>
+            </div>
+            <div class="space-y-1">
+                <label for="startDate" class="block text-sm font-medium text-slate-300">Start Date</label>
+                <input type="date" id="startDate"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    required>
+            </div>
+            <div class="space-y-1">
+                <label for="endDate" class="block text-sm font-medium text-slate-300">End Date</label>
+                <input type="date" id="endDate"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    required>
+            </div>
+            <div class="space-y-1">
+                <label for="rsiOversold" class="block text-sm font-medium text-slate-300">RSI Oversold Level</label>
+                <input type="number" id="rsiOversold" value="40"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1" max="100">
+            </div>
+            <div class="space-y-1">
+                <label for="rsiOverbought" class="block text-sm font-medium text-slate-300">RSI Overbought Level</label>
+                <input type="number" id="rsiOverbought" value="70"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1" max="100">
+            </div>
+            <div class="space-y-1">
+                <label for="smaPeriod" class="block text-sm font-medium text-slate-300">SMA Period (days)</label>
+                <input type="number" id="smaPeriod" value="21"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="bbPeriod" class="block text-sm font-medium text-slate-300">Bollinger Band Period
+                    (days)</label>
+                <input type="number" id="bbPeriod" value="21"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="stdDev" class="block text-sm font-medium text-slate-300">Std Dev</label>
+                <input type="number" id="stdDev" value="2"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="col-span-full">
+                <button id="runBacktestButton" type="button"
+                    class="w-full rounded-md bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                    Run Backtest
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden flex justify-center items-center py-8">
+            <div id="loading-spinner" class="w-12 h-12 border-4 border-solid rounded-full border-transparent"></div>
+        </div>
+
+        <div id="results" class="hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 text-center">
+                <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
+                    <p class="text-xl font-bold" id="total-return">-</p>
+                    <p class="text-xs text-slate-400">Total Return</p>
+                </div>
+                <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
+                    <p class="text-xl font-bold" id="win-rate">-</p>
+                    <p class="text-xs text-slate-400">Winning Trades</p>
+                </div>
+                <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
+                    <p class="text-xl font-bold" id="total-trades">-</p>
+                    <p class="text-xs text-slate-400">Total Trades</p>
+                </div>
+            </div>
+
+           
+
+            <div class="mt-8 rounded-md bg-slate-800/50 p-4 shadow-md overflow-x-auto">
+                <h2 class="text-xl font-semibold mb-4 text-center">Trade Log</h2>
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead>
+                        <tr class="text-xs font-medium text-slate-300 uppercase tracking-wider">
+                            <th class="px-2 py-3 text-left">Entry Date</th>
+                            <th class="px-2 py-3 text-left">Entry Price</th>
+                            <th class="px-2 py-3 text-left">Exit Date</th>
+                            <th class="px-2 py-3 text-left">Exit Price</th>
+                            <th class="px-2 py-3 text-left">Result ($)</th>
+                            <th class="px-2 py-3 text-left">Result (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradeLog" class="divide-y divide-slate-700">
+                        <!-- Trade log will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const runBacktestButton = document.getElementById('runBacktestButton');
+        const apiKeyInput = document.getElementById('apiKey');
+        const tickerInput = document.getElementById('ticker');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const rsiOversoldInput = document.getElementById('rsiOversold');
+        const rsiOverboughtInput = document.getElementById('rsiOverbought');
+        const smaPeriodInput = document.getElementById('smaPeriod');
+        const bbPeriodInput = document.getElementById('bbPeriod');
+        const stdDevInput = document.getElementById('stdDev');
+        const loadingDiv = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+        const totalReturnEl = document.getElementById('total-return');
+        const winRateEl = document.getElementById('win-rate');
+        const totalTradesEl = document.getElementById('total-trades');
+        const tradeLogBody = document.getElementById('tradeLog');
+
+        let myChart = null;
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const savedApiKey = localStorage.getItem('apiKey');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+        });
+
+        // Set default dates
+        startDateInput.value = '2022-01-01';
+        endDateInput.value = '2025-01-01';
+
+        // Function to handle fetching historical data in one call
+        const fetchHistoricalData = async (ticker, startDate, endDate, apiKey) => {
+            console.log(`API Fetch URL: https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${ticker}&from=${startDate}&to=${endDate}&apikey=${apiKey}`);
+            const url = `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${ticker}&from=${startDate}&to=${endDate}&apikey=${apiKey}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('The API key you provided is invalid. Please check your key or consider using a different API service.');
+                }
+                if (response.status === 429) {
+                    throw new Error('API Request Limit Exceeded. Please try again later.');
+                }
+                throw new Error(`Failed to fetch data. Status: ${response.status} ${response.statusText}`);
+            }
+
+            const apiData = await response.json();
+            console.log("API Response Data:", apiData[0]);
+            if (apiData && apiData.length > 0) {
+                // Data will be in this format 
+                /**
+                 * [
+                    {
+                        "symbol": "AAPL",
+                        "date": "2024-12-31",
+                        "open": 252.44,
+                        "high": 253.28,
+                        "low": 249.43,
+                        "close": 250.42,
+                        "volume": 39480718,
+                        "change": -2.02,
+                        "changePercent": -0.80019,
+                        "vwap": 251.3925
+                    }, ... ]
+                 * 
+                 * 
+                 * */
+                return apiData;
+            } else {
+                throw new Error('No historical data found for this ticker and date range. The API may have limitations on data or your key may not support the date range. Please try another ticker or a shorter date range.');
+            }
+        };
+
+        // Calculation of indicators (SMA, RSI, Bollinger Bands)
+        const calculateIndicators = (data, smaPeriod, bbPeriod, stdDevMultiplier) => {
+            let gains = [];
+            let losses = [];
+            let avgGain = 0;
+            let avgLoss = 0;
+
+            const newData = data.map((d, i) => {
+                // SMA Calculation
+                const sma = i >= smaPeriod - 1 ?
+                    data.slice(i - smaPeriod + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriod :
+                    null;
+
+                // Bollinger Band Calculation
+                let upperBand = null;
+                let lowerBand = null;
+                if (i >= bbPeriod - 1) {
+                    const closes = data.slice(i - bbPeriod + 1, i + 1).map(item => item.close);
+                    const mean = closes.reduce((sum, val) => sum + val, 0) / bbPeriod;
+                    const stdDev = Math.sqrt(closes.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / bbPeriod);
+                    upperBand = mean + (stdDev * stdDevMultiplier);
+                    lowerBand = mean - (stdDev * stdDevMultiplier);
+                }
+
+                // RSI Calculation
+                let rsi = null;
+                if (i > 0) {
+                    const diff = d.close - data[i - 1].close;
+                    const gain = diff > 0 ? diff : 0;
+                    const loss = diff < 0 ? -diff : 0;
+
+                    if (i < 14) {
+                        gains.push(gain);
+                        losses.push(loss);
+                    } else if (i === 14) {
+                        avgGain = gains.reduce((a, b) => a + b) / 14;
+                        avgLoss = losses.reduce((a, b) => a + b) / 14;
+                    } else {
+                        avgGain = ((avgGain * 13) + gain) / 14;
+                        avgLoss = ((avgLoss * 13) + loss) / 14;
+                    }
+
+                    if (avgLoss !== 0) {
+                        const rs = avgGain / avgLoss;
+                        rsi = 100 - (100 / (1 + rs));
+                    } else if (avgGain !== 0) {
+                        rsi = 100;
+                    }
+                }
+
+                return {
+                    ...d,
+                    sma,
+                    rsi,
+                    upperBand,
+                    lowerBand
+                };
+            });
+            return newData;
+        };
+
+        // Backtesting Strategy Logic
+        const runStrategy = (data, smaPeriod, rsiOversold, rsiOverbought) => {
+            let position = null;
+            let trades = [];
+            let daysAboveSMA = 0;
+            let daysUnderSMA = 0;
+
+            console.log("Running strategy...");
+
+            for (let i = 1; i < data.length; i++) {
+                const day = data[i];
+
+                if (day.sma) {
+                    if (day.close >= day.sma) {
+                        daysAboveSMA++;
+                        daysUnderSMA = 0;
+                    } else {
+                        daysUnderSMA++;
+                        daysAboveSMA = 0;
+                    }
+                }
+
+                console.log(`Date: ${day.date}, Close: ${day.close}, SMA: ${day.sma}, RSI: ${day.rsi}, daysAboveSMA: ${daysAboveSMA}, daysUnderSMA: ${daysUnderSMA}`);
+
+                if (!position && day.sma && day.rsi) {
+                    //if (daysAboveSMA >= 2 && day.rsi < rsiOversold) {
+                    if (daysAboveSMA >= 2) {
+
+                        position = {
+                            entryDate: day.date,
+                            entryPrice: day.close,
+                            tradeLogIndex: trades.length
+                        };
+                        trades.push({
+                            entryDate: day.date,
+                            entryPrice: day.close,
+                            exitDate: null,
+                            exitPrice: null,
+                            result: null,
+                            resultPercentage: null
+                        });
+                        console.log(`%cTrade Entered on ${day.date} at ${day.close}`, 'color: green');
+                        daysAboveSMA = 0;
+                        daysUnderSMA = 0;
+                    }
+                }
+
+                if (position) {
+                    const stopLoss = daysUnderSMA >= 2;
+
+                    if (stopLoss || i === data.length - 1) {
+                        trades[position.tradeLogIndex].exitDate = day.date;
+                        trades[position.tradeLogIndex].exitPrice = day.close;
+                        console.log(`%cTrade Exited on ${day.date} at ${day.close}`, 'color: red');
+                        position = null;
+                        daysAboveSMA = 0;
+                        daysUnderSMA = 0;
+                    }
+                }
+            }
+
+            console.log("Strategy run complete.");
+
+            trades.forEach(trade => {
+                if (trade.exitPrice !== null) {
+                    const result = trade.exitPrice - trade.entryPrice;
+                    trade.result = result;
+                    trade.resultPercentage = (result / trade.entryPrice) * 100;
+                }
+            });
+
+            return trades;
+        };
+
+        const displayResults = (data, trades) => {
+            const winningTrades = trades.filter(t => t.result !== null && t.result > 0);
+            const totalReturn = trades.reduce((sum, t) => sum + (t.result || 0), 0);
+            const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
+            const finalPnlColor = totalReturn >= 0 ? 'text-green-500' : 'text-red-500';
+
+            totalReturnEl.innerHTML = `<span class="${finalPnlColor}">$${totalReturn.toFixed(2)}</span>`;
+            winRateEl.textContent = `${winRate.toFixed(2)}% (${winningTrades.length}/${trades.length})`;
+            totalTradesEl.textContent = trades.length;
+
+            tradeLogBody.innerHTML = '';
+            trades.forEach(trade => {
+                const row = document.createElement('tr');
+                const pnlColor = (trade.result ?? 0) >= 0 ? 'text-green-500' : 'text-red-500';
+                row.innerHTML = `
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryDate}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryPrice.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.result !== null ? '$' + trade.result.toFixed(2) : 'Open'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage !== null ? trade.resultPercentage.toFixed(2) + '%' : 'Open'}</td>
+        `;
+                tradeLogBody.appendChild(row);
+            });
+
+            resultsDiv.classList.remove('hidden');
+        };
+
+        // Main backtesting function
+        const runBacktest = async () => {
+            console.log(`Console URL: ${window.location.href}`);
+            const API_KEY = apiKeyInput.value.trim();
+            localStorage.setItem('apiKey', API_KEY);
+
+
+            // Clear previous results
+            resultsDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            tradeLogBody.innerHTML = '';
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            try {
+                const ticker = tickerInput.value.toUpperCase();
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                const rsiOversold = parseFloat(rsiOversoldInput.value);
+                const rsiOverbought = parseFloat(rsiOverboughtInput.value);
+                const smaPeriod = parseInt(smaPeriodInput.value);
+                const bbPeriod = parseInt(bbPeriodInput.value);
+                const stdDevMultiplier = parseFloat(stdDevInput.value);
+
+                if (!API_KEY) {
+                    throw new Error('Please enter a valid API key in the input field above.');
+                }
+
+                // Fetch all historical data in one call
+                const historicalData = await fetchHistoricalData(ticker, startDate, endDate, API_KEY);
+
+                if (!historicalData || historicalData.length === 0) {
+                    throw new Error('No historical data found for this ticker and date range. The API may have limitations on data or your key may not support the date range. Please try another ticker or a shorter date range.');
+                }
+
+                // The historical data is returned in reverse chronological order, so we reverse it.
+                const sortedData = historicalData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                // Calculate indicators
+                const dailyData = calculateIndicators(sortedData, smaPeriod, bbPeriod, stdDevMultiplier);
+
+                // Run the backtest strategy
+                const trades = runStrategy(dailyData, smaPeriod, rsiOversold, rsiOverbought);
+
+                // Display the results
+                displayResults(dailyData, trades);
+
+            } catch (error) {
+                console.error("Backtesting failed:", error);
+                // Use a custom message box instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.innerHTML = `<div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                                            <div class="bg-gray-800 rounded-lg p-6 max-w-sm text-center shadow-lg border border-gray-700">
+                                                <p class="text-lg font-semibold text-red-400 mb-4">Error</p>
+                                                <p class="text-sm text-white mb-6">${error.message}</p>
+                                                <button class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded" onclick="this.parentElement.parentElement.remove()">Close</button>
+                                            </div>
+                                        </div>`;
+                document.body.appendChild(messageBox);
+
+                resultsDiv.classList.add('hidden');
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        };
+
+        runBacktestButton.addEventListener('click', runBacktest);
+    </script>
+</body>
+
+</html>
