@@ -177,10 +177,17 @@
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry) (SORT ASCENDING) </label>
+                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted by order) </label>
                 <input type="number" id="rsPeriod" value="90"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">RS Sort Order</label>
+                <select id="rsSortOrder" class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
+                    <option value="ASC">Ascending</option>
+                    <option value="DESC">Descending</option>
+                </select>
             </div>
             <div class="space-y-1">
                 <label for="numberOfStocks" class="block text-sm font-medium text-slate-300">Number of Stocks in Portfolio</label>
@@ -257,6 +264,7 @@
         const daysUnderSMAInput = document.getElementById('daysUnderSMA');
         const rsPeriodInput = document.getElementById('rsPeriod'); // Re-added this line
         const numberOfStocksInput = document.getElementById('numberOfStocks');
+        const rsSortOrderInput = document.getElementById('rsSortOrder');
         const loadingDiv = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
         const totalReturnEl = document.getElementById('total-return');
@@ -519,7 +527,7 @@
                 const openSlots = numberOfStocks - positions.length;
                 // Do not look for new entries on the last day of the simulation.
                 if (openSlots > 0 && cash > 1 && date !== masterDateList[masterDateList.length - 1]) {
-                    const candidates = [];
+                    let candidates = [];
                     const activeTickers = positions.map(p => p.ticker);
 
                     tickers.forEach(ticker => {
@@ -534,8 +542,12 @@
                     });
 
                     if (candidates.length > 0) {
-                        candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
-                        console.log('sorted candidates', candidates)
+                        if(rsSortOrderInput.value === "ASC"){
+                            candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
+                        }else if(rsSortOrderInput.value === "DESC"){
+                             candidates.sort((a, b) => b.rs - a.rs); // Sort by RS DESCENDING
+                        }
+                        console.log('Sorted candidates for Entry ',rsSortOrderInput.value, date, candidates)
 
                         const tradesToEnter = candidates.slice(0, openSlots);
                         const capitalPerTrade = openSlots > 0 ? cash / openSlots : 0; // Distribute available cash based on open slots
