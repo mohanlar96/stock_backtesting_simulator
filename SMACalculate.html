@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Backtesting Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -243,9 +241,6 @@
                     </tbody>
                 </table>
             </div>
-            <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
-                <canvas id="myChart"></canvas>
-            </div>
         </div>
     </div>
 
@@ -271,8 +266,6 @@
         const tickerSearchInput = document.getElementById('tickerSearch');
         const tickerSuggestionsDiv = document.getElementById('tickerSuggestions');
         const selectedTickersDiv = document.getElementById('selectedTickers');
-
-        let myChart = null;
 
         document.addEventListener('DOMContentLoaded', (event) => {
             const savedApiKey = localStorage.getItem('apiKey');
@@ -651,10 +644,6 @@
             resultsDiv.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
             tradeLogBody.innerHTML = '';
-            if (myChart) {
-                myChart.destroy();
-            }
-
             try {
                 const tickerTags = selectedTickersDiv.querySelectorAll('.ticker-tag');
                 const tickers = Array.from(tickerTags).map(tag => tag.dataset.symbol);
