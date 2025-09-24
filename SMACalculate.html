@@ -538,7 +538,7 @@
                         console.log('sorted candidates', candidates)
 
                         const tradesToEnter = candidates.slice(0, openSlots);
-                        const capitalPerTrade = cash / tradesToEnter.length; // Distribute available cash equally
+                        const capitalPerTrade = openSlots > 0 ? cash / openSlots : 0; // Distribute available cash based on open slots
 
                         tradesToEnter.forEach(candidate => {
                             const { ticker, dayData } = candidate;
