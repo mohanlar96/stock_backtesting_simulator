@@ -177,7 +177,7 @@
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days)</label>
+                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry) (SORT ASCENDING) </label>
                 <input type="number" id="rsPeriod" value="90"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
@@ -417,7 +417,7 @@
         };
 
         const initializeTickerInput = () => {
-            ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK-B', 'LLY', 'V', 'JPM', 'WMT', 'XOM', 'UNH', 'MA', 'JNJ', 'PG', 'HD', 'COST', 'MRK', 'ABBV', 'PEP', 'KO', 'ORCL', 'CSCO'].forEach(addTickerTag);
+            ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'TSLA', 'AVGO', 'LLY', 'ORCL'].forEach(addTickerTag);
 
             tickerSearchInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
@@ -534,7 +534,8 @@
                     });
 
                     if (candidates.length > 0) {
-                        candidates.sort((a, b) => b.rs - a.rs); // Sort by RS descending
+                        candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
+                        console.log('sorted candidates', candidates)
 
                         const tradesToEnter = candidates.slice(0, openSlots);
                         const capitalPerTrade = cash / tradesToEnter.length; // Distribute available cash equally
