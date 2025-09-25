@@ -107,7 +107,7 @@
                     <span class="font-semibold text-slate-200">Exit Rule (Stop-Loss):</span> Sell when the stock's
                     closing price is under the SMA for a configurable number of consecutive days.
                 </li>
-                
+
             </ul>
         </div>
 
@@ -147,7 +147,8 @@
                     required>
             </div>
             <div class="space-y-1">
-                <label for="investmentAmount" class="block text-sm font-medium text-slate-300">Initial Capital ($)</label>
+                <label for="investmentAmount" class="block text-sm font-medium text-slate-300">Initial Capital
+                    ($)</label>
                 <input type="number" id="investmentAmount" value="100"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
@@ -159,13 +160,15 @@
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (Exit) (also Entry)</label>
+                <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (Exit) (also
+                    Entry)</label>
                 <input type="number" id="smaPeriodExit" value="21"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above SMA (Entry)</label>
+                <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above SMA
+                    (Entry)</label>
                 <input type="number" id="daysAboveSMA" value="2"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
@@ -177,20 +180,36 @@
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted by order) </label>
+                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted
+                    by order) </label>
                 <input type="number" id="rsPeriod" value="90"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
             <div class="space-y-1">
                 <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">RS Sort Order</label>
-                <select id="rsSortOrder" class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
-                    <option value="ASC">Ascending</option>
-                    <option value="DESC">Descending</option>
+                <select id="rsSortOrder"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
+                    <option value="DESC">Pick highest first </option>
+                    <option value="ASC">Pick lowest first</option>
                 </select>
             </div>
             <div class="space-y-1">
-                <label for="numberOfStocks" class="block text-sm font-medium text-slate-300">Number of Stocks in Portfolio</label>
+                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Period Day (Entry) </label>
+                <input type="number" id="avgVolumePeriod" value="20"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Volume Multiplier (Entry)
+                </label>
+                <input type="number" id="volumeMultiplier" value="2"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="numberOfStocks" class="block text-sm font-medium text-slate-300">Number of Stocks in
+                    Portfolio</label>
                 <input type="number" id="numberOfStocks" value="1"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
@@ -223,7 +242,7 @@
                 </div>
             </div>
 
-           
+
 
             <div class="mt-8 rounded-md bg-slate-800/50 p-4 shadow-md overflow-x-auto">
                 <h2 class="text-xl font-semibold mb-4 text-center">Trade Log</h2>
@@ -274,6 +293,8 @@
         const tickerSearchInput = document.getElementById('tickerSearch');
         const tickerSuggestionsDiv = document.getElementById('tickerSuggestions');
         const selectedTickersDiv = document.getElementById('selectedTickers');
+        const avgVolumePeriodInput = document.getElementById('avgVolumePeriod')
+        const volumeMultiplierInput = document.getElementById('volumeMultiplier')
 
         document.addEventListener('DOMContentLoaded', (event) => {
             const savedApiKey = localStorage.getItem('apiKey');
@@ -350,7 +371,15 @@
                     }
                 }
 
-                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength , d.close)
+                const avgVolumePeriod = avgVolumePeriodInput.value;
+
+                let lastXDaysVolume = i >= avgVolumePeriod - 1
+                    ? data
+                        .slice(i - avgVolumePeriod + 1, i + 1) // last 20 candles
+                        .reduce((sum, item) => sum + item.volume, 0) / avgVolumePeriod
+                    : null;
+
+                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close , lastXDaysVolume)
 
 
                 return {
@@ -358,6 +387,7 @@
                     smaEntry,
                     smaExit,
                     relativeStrength,
+                    lastXDaysVolume,
                 };
             });
             return newData;
@@ -519,7 +549,7 @@
                     trade.resultPercentage = (result / trade.entryAmount) * 100;
 
                     console.log(`%cTrade Exited ${trade.ticker} on ${exitDay.date} at ${exitDay.close}. P/L: ${result.toFixed(2)}. New Cash: ${cash.toFixed(2)}`, 'color: red');
-                    
+
                     positions.splice(index, 1);
                 }
 
@@ -534,8 +564,8 @@
                         if (activeTickers.includes(ticker)) return; // Already in this stock
 
                         const day = allData[ticker]?.find(d => d.date === date);
-                        if (day && day.smaEntry && day.relativeStrength) {
-                            if (daysAboveSMA[ticker] >= daysAboveSMAForEntry) {
+                        if (day && day.smaEntry && day.relativeStrength && day.lastXDaysVolume) {
+                            if (daysAboveSMA[ticker] >= daysAboveSMAForEntry && day.volume >= day.lastXDaysVolume * volumeMultiplierInput.value) {
                                 candidates.push({ ticker, rs: day.relativeStrength, dayData: day });
                             }
                         }
@@ -570,7 +600,7 @@
                                 result: null,
                                 resultPercentage: null
                             });
-                            
+
                             cash -= capitalPerTrade;
                             console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with $${capitalPerTrade.toFixed(2)}`, 'color: green');
 
@@ -689,7 +719,7 @@
                 if (!API_KEY) {
                     throw new Error('Please enter a valid API key in the input field above.');
                 }
-                
+
                 const allData = {};
                 const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, fetchStartDate, endDate, API_KEY));
                 const results = await Promise.all(dataPromises);
