@@ -101,7 +101,8 @@
             <ul class="list-disc list-inside space-y-2 text-sm text-slate-400">
                 <li>
                     <span class="font-semibold text-slate-200">Entry Rule:</span> Buy when the stock's closing price is
-                    supported by the both SMA for a configurable number of days AND also Average Volume Period * Volume Multiplier > currentVolume. Results sort by RS.
+                    supported by the both SMA for a configurable number of days AND also Average Volume Period * Volume
+                    Multiplier > currentVolume. Results sort by RS.
                 </li>
                 <li>
                     <span class="font-semibold text-slate-200">Exit Rule (Stop-Loss):</span> Sell when the stock's
@@ -154,6 +155,13 @@
                     min="1">
             </div>
             <div class="space-y-1">
+                <label for="numberOfStocks" class="block text-sm font-medium text-slate-300">Number of Stocks in
+                    Portfolio</label>
+                <input type="number" id="numberOfStocks" value="1"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
                 <label for="smaPeriodEntry" class="block text-sm font-medium text-slate-300">SMA Period (Entry)</label>
                 <input type="number" id="smaPeriodEntry" value="200"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
@@ -163,6 +171,20 @@
                 <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (Exit) (also
                     Entry)</label>
                 <input type="number" id="smaPeriodExit" value="21"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Period Day
+                    (Entry) </label>
+                <input type="number" id="avgVolumePeriod" value="20"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    min="1">
+            </div>
+            <div class="space-y-1">
+                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted
+                    by order) </label>
+                <input type="number" id="rsPeriod" value="90"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -180,9 +202,10 @@
                     min="1">
             </div>
             <div class="space-y-1">
-                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted
-                    by order) </label>
-                <input type="number" id="rsPeriod" value="90"
+                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Multiplier
+                    (Entry)
+                </label>
+                <input type="number" id="volumeMultiplier" value="2"
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
@@ -193,26 +216,6 @@
                     <option value="DESC">Pick highest first </option>
                     <option value="ASC">Pick lowest first</option>
                 </select>
-            </div>
-            <div class="space-y-1">
-                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Period Day (Entry) </label>
-                <input type="number" id="avgVolumePeriod" value="20"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Volume Multiplier (Entry)
-                </label>
-                <input type="number" id="volumeMultiplier" value="2"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="numberOfStocks" class="block text-sm font-medium text-slate-300">Number of Stocks in
-                    Portfolio</label>
-                <input type="number" id="numberOfStocks" value="1"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
             </div>
             <div class="col-span-full">
                 <button id="runBacktestButton" type="button"
@@ -379,7 +382,7 @@
                         .reduce((sum, item) => sum + item.volume, 0) / avgVolumePeriod
                     : null;
 
-                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close , lastXDaysVolume)
+                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close, lastXDaysVolume)
 
 
                 return {
@@ -524,7 +527,7 @@
                     const day = allData[pos.ticker]?.find(d => d.date === date);
                     if (day) {
                         const stopLoss = daysUnderSMA[pos.ticker] >= daysUnderSMAForExit;
-                        if (stopLoss || date === masterDateList[masterDateList.length - 1]) {
+                        if (stopLoss) {
                             positionsToExitIndexes.push(index);
                         }
                     }
@@ -572,12 +575,12 @@
                     });
 
                     if (candidates.length > 0) {
-                        if(rsSortOrderInput.value === "ASC"){
+                        if (rsSortOrderInput.value === "ASC") {
                             candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
-                        }else if(rsSortOrderInput.value === "DESC"){
-                             candidates.sort((a, b) => b.rs - a.rs); // Sort by RS DESCENDING
+                        } else if (rsSortOrderInput.value === "DESC") {
+                            candidates.sort((a, b) => b.rs - a.rs); // Sort by RS DESCENDING
                         }
-                        console.log('Sorted candidates for Entry ',rsSortOrderInput.value, date, candidates)
+                        console.log('Sorted candidates for Entry ', rsSortOrderInput.value, date, candidates)
 
                         const tradesToEnter = candidates.slice(0, openSlots);
                         const capitalPerTrade = openSlots > 0 ? cash / openSlots : 0; // Distribute available cash based on open slots
