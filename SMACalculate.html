@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Backtesting Tool</title>
+    <title>Stock Back testing Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -161,62 +161,85 @@
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     min="1">
             </div>
-            <div class="space-y-1">
-                <label for="smaPeriodEntry" class="block text-sm font-medium text-slate-300">SMA Period (Entry)</label>
-                <input type="number" id="smaPeriodEntry" value="200"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
+
+            <div class="col-span-1 sm:col-span-2 lg:col-span-2 rounded-md bg-slate-800/50 p-4 shadow-md">
+                <h3 class="text-lg font-medium text-slate-200 mb-2">Entry Strategy</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label for="smaPeriodEntry" class="block text-sm font-medium text-slate-300">SMA Period</label>
+                        <input type="number" id="smaPeriodEntry" value="200"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above SMA</label>
+                        <input type="number" id="daysAboveSMA" value="2"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                </div>
             </div>
-            <div class="space-y-1">
-                <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (Exit) (also
-                    Entry)</label>
-                <input type="number" id="smaPeriodExit" value="21"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
+
+            
+
+            <div class="col-span-1 sm:col-span-2 lg:col-span-2 rounded-md bg-slate-800/50 p-4 shadow-.md">
+                <h3 class="text-lg font-medium text-slate-200 mb-2">Volume Filter (Entry)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label for="avgVolumePeriod" class="block text-sm font-medium text-slate-300">Average Volume
+                            Period</label>
+                        <input type="number" id="avgVolumePeriod" value="20"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="volumeMultiplier" class="block text-sm font-medium text-slate-300">AvgVolume
+                            Multiplier <span class="text-xs text-red-400 font-normal"> ( set 0 to exclude volume filter )</span></label>
+                        <input type="number" id="volumeMultiplier" value="2"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                </div>
             </div>
-            <div class="space-y-1">
-                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Period Day
-                    (Entry) </label>
-                <input type="number" id="avgVolumePeriod" value="20"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
+
+            <div class="col-span-1 sm:col-span-2 lg:col-span-2 rounded-md bg-slate-800/50 p-4 shadow-md">
+                <h3 class="text-lg font-medium text-slate-200 mb-2">Relative Strength (Sort and Pick on Entry)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days)</label>
+                        <input type="number" id="rsPeriod" value="90"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">RS Sort Order</label>
+                        <select id="rsSortOrder"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text.sm">
+                            <option value="DESC">Pick highest first </option>
+                            <option value="ASC">Pick lowest first</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="space-y-1">
-                <label for="rsPeriod" class="block text-sm font-medium text-slate-300">RS Period (days) (Entry, sorted
-                    by order) </label>
-                <input type="number" id="rsPeriod" value="90"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
+
+            <div class="col-span-1 sm:col-span-2 lg:col-span-2 rounded-md bg-slate-800/50 p-4 shadow-md">
+                <h3 class="text-lg font-medium text-slate-200 mb-2">Exit Strategy</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period  (use for Entry) </label>
+                        <input type="number" id="smaPeriodExit" value="21"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="daysUnderSMA" class="block text-sm font-medium text-slate-300">Days Under SMA</label>
+                        <input type="number" id="daysUnderSMA" value="2"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                </div>
             </div>
-            <div class="space-y-1">
-                <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above SMA
-                    (Entry)</label>
-                <input type="number" id="daysAboveSMA" value="2"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="daysUnderSMA" class="block text-sm font-medium text-slate-300">Days Under SMA (Exit)</label>
-                <input type="number" id="daysUnderSMA" value="2"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">Average Volume Multiplier
-                    (Entry)
-                </label>
-                <input type="number" id="volumeMultiplier" value="2"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
-                    min="1">
-            </div>
-            <div class="space-y-1">
-                <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">RS Sort Order</label>
-                <select id="rsSortOrder"
-                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
-                    <option value="DESC">Pick highest first </option>
-                    <option value="ASC">Pick lowest first</option>
-                </select>
-            </div>
+
             <div class="col-span-full">
                 <button id="runBacktestButton" type="button"
                     class="w-full rounded-md bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
