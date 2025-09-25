@@ -641,6 +641,26 @@
                 }
             }
 
+            // After the loop, calculate final results for any open positions
+            if (masterDateList.length > 0) {
+                const lastDate = masterDateList[masterDateList.length - 1];
+                positions.forEach(pos => {
+                    const trade = trades[pos.tradeLogIndex];
+                    // Find the data for the last day of the simulation for this ticker
+                    const lastDayData = allData[pos.ticker]?.find(d => d.date === lastDate) || allData[pos.ticker]?.[allData[pos.ticker]?.length - 1];
+
+                    if (lastDayData) {
+                        const currentValue = pos.shares * lastDayData.close;
+                        trade.exitDate = lastDayData.date; // Show the last date as the 'exit'
+                        trade.exitPrice = lastDayData.close;
+                        trade.exitAmount = 'Open'; // This is the special flag
+                        trade.result = currentValue - trade.entryAmount;
+                        trade.resultPercentage = (trade.result / trade.entryAmount) * 100;
+                    }
+                });
+            }
+
+
             console.log("Strategy run complete.");
 
             return trades;
@@ -696,7 +716,7 @@
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryAmount.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount === 'Open' ? '<span class="text-green-500">Open<span>' : (trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A')}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${holdDaysText}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.result !== null ? '$' + trade.result.toFixed(2) : 'Open'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage !== null ? trade.resultPercentage.toFixed(2) + '%' : 'Open'}</td>
