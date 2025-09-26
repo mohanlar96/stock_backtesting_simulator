@@ -654,6 +654,7 @@
                         trade.exitDate = lastDayData.date; // Show the last date as the 'exit'
                         trade.exitPrice = lastDayData.close;
                         trade.exitAmount = 'Open'; // This is the special flag
+                        trade.warn = lastDayData.close <= lastDayData.smaExit // this is already 1 day below SMA to exit
                         trade.result = currentValue - trade.entryAmount;
                         trade.resultPercentage = (trade.result / trade.entryAmount) * 100;
                     }
@@ -707,6 +708,7 @@
                     const diffTime = exit - entry;
                     holdDaysText = Math.round(diffTime / (1000 * 60 * 60 * 24));
                 }
+                const openClassName= (trade.exitAmount === 'Open' && trade.warn)? "text-yellow-500" : "text-green-500";
 
                 row.innerHTML = `
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300 font-bold">${trade.ticker}</td>
@@ -716,10 +718,10 @@
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryAmount.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount === 'Open' ? '<span class="text-green-500">Open<span>' : (trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A')}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount === 'Open' ? `<span class="${openClassName}">Open</span>`  : (trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A')}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${holdDaysText}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.result !== null ? '$' + trade.result.toFixed(2) : 'Open'}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage !== null ? trade.resultPercentage.toFixed(2) + '%' : 'Open'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${ '$' + trade.result.toFixed(2) }</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage.toFixed(2) + '%'}</td>
         `;
                 tradeLogBody.appendChild(row);
             });
