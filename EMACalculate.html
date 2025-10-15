@@ -166,14 +166,19 @@
                 <h3 class="text-lg font-medium text-slate-200 mb-2">Entry Strategy</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label for="smaPeriodEntry" class="block text-sm font-medium text-slate-300">SMA Period</label>
-                        <input type="number" id="smaPeriodEntry" value="200"
+                        <label for="smaPeriodEntry1" class="block text-sm font-medium text-slate-300">Long SMA Period</label>
+                        <input type="number" id="smaPeriodEntry1" value="200"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
                     </div>
                     <div class="space-y-1">
-                        <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above
-                            SMA</label>
+                        <label for="smaPeriodEntry2" class="block text-sm font-medium text-slate-300">Short SMA Period</label>
+                        <input type="number" id="smaPeriodEntry2" value="21"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                            min="1">
+                    </div>
+                    <div class="space-y-1 col-span-2">
+                        <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above Both SMAs</label>
                         <input type="number" id="daysAboveSMA" value="2"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
@@ -217,8 +222,8 @@
                         <label for="rsSortOrder" class="block text-sm font-medium text-slate-300">RS Sort Order</label>
                         <select id="rsSortOrder"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text.sm">
-                            <option value="DESC">Pick highest first </option>
                             <option value="ASC">Pick lowest first</option>
+                            <option value="DESC">Pick highest first </option>
                         </select>
                     </div>
                 </div>
@@ -228,16 +233,16 @@
                 <h3 class="text-lg font-medium text-slate-200 mb-2">Exit Strategy</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label for="smaPeriodExit" class="block text-sm font-medium text-slate-300">SMA Period (use for
+                        <label for="emaPeriodExit" class="block text-sm font-medium text-slate-300">EMA Period (also use for
                             Entry) </label>
-                        <input type="number" id="smaPeriodExit" value="21"
+                        <input type="number" id="emaPeriodExit" value="9"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
                     </div>
                     <div class="space-y-1">
-                        <label for="daysUnderSMA" class="block text-sm font-medium text-slate-300">Days Under
-                            SMA</label>
-                        <input type="number" id="daysUnderSMA" value="2"
+                        <label for="daysUnderEMA" class="block text-sm font-medium text-slate-300">Days Under
+                            EMA</label>
+                        <input type="number" id="daysUnderEMA" value="2"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
                     </div>
@@ -307,10 +312,11 @@
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         const investmentAmountInput = document.getElementById('investmentAmount');
-        const smaPeriodEntryInput = document.getElementById('smaPeriodEntry');
-        const smaPeriodExitInput = document.getElementById('smaPeriodExit');
+        const smaPeriodEntry1Input = document.getElementById('smaPeriodEntry1');
+        const smaPeriodEntry2Input = document.getElementById('smaPeriodEntry2');
+        const emaPeriodExitInput = document.getElementById('emaPeriodExit');
         const daysAboveSMAInput = document.getElementById('daysAboveSMA');
-        const daysUnderSMAInput = document.getElementById('daysUnderSMA');
+        const daysUnderEMAInput = document.getElementById('daysUnderEMA');
         const rsPeriodInput = document.getElementById('rsPeriod'); // Re-added this line
         const numberOfStocksInput = document.getElementById('numberOfStocks');
         const rsSortOrderInput = document.getElementById('rsSortOrder');
@@ -380,23 +386,33 @@
         };
 
         // Calculation of indicators (SMA, RSI, Bollinger Bands)
-        const calculateIndicators = (data, smaPeriodEntry, smaPeriodExit, rsPeriod) => {
+        const calculateIndicators = (data, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod) => {
             const newData = [];
-            const ema9Period = 9;
-            const multiplier = 2 / (ema9Period + 1);
-            let ema9 = null;
+            const multiplier = 2 / (emaPeriodExit + 1);
+            let emaExit = null;
 
             for (let i = 0; i < data.length; i++) {
                 const d = data[i];
                 // SMA Calculation for Entry
-                const smaEntry = i >= smaPeriodEntry - 1 ?
-                    data.slice(i - smaPeriodEntry + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriodEntry :
+                const smaEntry1 = i >= smaPeriodEntry1 - 1 ?
+                    data.slice(i - smaPeriodEntry1 + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriodEntry1 :
                     null;
 
-                // SMA Calculation for Exit
-                const smaExit = i >= smaPeriodExit - 1 ?
-                    data.slice(i - smaPeriodExit + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriodExit :
+                const smaEntry2 = i >= smaPeriodEntry2 - 1 ?
+                    data.slice(i - smaPeriodEntry2 + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriodEntry2 :
                     null;
+
+
+                // EMA Calculation for Exit
+                if (i === emaPeriodExit - 1) {
+                    let sum = 0;
+                    for (let j = 0; j < emaPeriodExit; j++) {
+                        sum += data[j].close;
+                    }
+                    emaExit = sum / emaPeriodExit;
+                } else if (i > emaPeriodExit - 1) {
+                    emaExit = (data[i].close - emaExit) * (2 / (emaPeriodExit + 1)) + emaExit;
+                }
 
                 // Relative Strength Calculation
                 let relativeStrength = null;
@@ -407,16 +423,6 @@
                     }
                 }
 
-                if (i === ema9Period - 1) {
-                    let sum = 0;
-                    for (let j = 0; j < ema9Period; j++) {
-                        sum += data[j].close;
-                    }
-                    ema9 = sum / ema9Period;
-                } else if (i > ema9Period - 1) {
-                    ema9 = (data[i].close - ema9) * multiplier + ema9;
-                }
-
                 const avgVolumePeriod = avgVolumePeriodInput.value;
 
                 let lastXDaysVolume = i >= avgVolumePeriod - 1
@@ -425,16 +431,15 @@
                         .reduce((sum, item) => sum + item.volume, 0) / avgVolumePeriod
                     : null;
 
-                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close, lastXDaysVolume, ema9)
-
+                console.log(d.symbol, d.date, smaEntry1, smaEntry2, emaExit, relativeStrength, d.close, lastXDaysVolume)
 
                 newData.push({
                     ...d,
-                    smaEntry,
-                    smaExit,
+                    smaEntry1,
+                    smaEntry2,
+                    emaExit,
                     relativeStrength,
                     lastXDaysVolume,
-                    ema9,
                 });
             }
             return newData;
@@ -525,20 +530,20 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderSMAForExit, numberOfStocks) => {
+        const runStrategy = (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderEMAForExit, numberOfStocks) => {
             let positions = []; // Array of active positions { ticker, shares, tradeLogIndex }
             let trades = [];
             let cash = investmentAmount;
 
             const daysAboveSMA = {};
-            const daysUnderSMA = {};
+            const daysUnderEMA = {};
             tickers.forEach(t => {
                 daysAboveSMA[t] = 0;
-                daysUnderSMA[t] = 0;
+                daysUnderEMA[t] = 0;
             });
 
             console.log("Running strategy...");
-            console.log(`Initial Capital: $${cash.toFixed(2)}, Number of Stocks: ${numberOfStocks}`);
+            console.log(`Initial Capital: ${cash.toFixed(2)}, Number of Stocks: ${numberOfStocks}`);
 
             for (const date of masterDateList) {
                 // First, update all counters for all tickers for the current date
@@ -546,19 +551,19 @@
                     const day = allData[ticker]?.find(d => d.date === date);
                     if (day) {
                         // Update entry counter based on entry SMA
-                        if (day.smaEntry) {
-                            if (day.close >= day.smaEntry && day.close >= day.smaExit && day.close >= day.ema9) {
+                        if (day.smaEntry1 && day.smaEntry2) {
+                            if (day.close >= day.smaEntry1 && day.close >= day.smaEntry2 && day.close >= day.emaExit) {
                                 daysAboveSMA[ticker]++;
                             } else {
                                 daysAboveSMA[ticker] = 0;
                             }
                         }
                         // Update exit counter based on exit SMA
-                        if (day.smaExit) {
-                            if (day.close < day.ema9) {
-                                daysUnderSMA[ticker]++;
+                        if (day.emaExit) {
+                            if (day.close < day.emaExit) {
+                                daysUnderEMA[ticker]++;
                             } else {
-                                daysUnderSMA[ticker] = 0;
+                                daysUnderEMA[ticker] = 0;
                             }
                         }
                     }
@@ -569,7 +574,7 @@
                 positions.forEach((pos, index) => {
                     const day = allData[pos.ticker]?.find(d => d.date === date);
                     if (day) {
-                        const stopLoss = daysUnderSMA[pos.ticker] >= daysUnderSMAForExit;
+                        const stopLoss = daysUnderEMA[pos.ticker] >= daysUnderEMAForExit;
                         if (stopLoss) {
                             positionsToExitIndexes.push(index);
                         }
@@ -610,7 +615,7 @@
                         if (activeTickers.includes(ticker)) return; // Already in this stock
 
                         const day = allData[ticker]?.find(d => d.date === date);
-                        if (day && day.smaEntry && day.relativeStrength && day.lastXDaysVolume) {
+                        if (day && day.smaEntry1 && day.smaEntry2 && day.relativeStrength && day.lastXDaysVolume) {
                             if (daysAboveSMA[ticker] >= daysAboveSMAForEntry && day.volume >= day.lastXDaysVolume * volumeMultiplierInput.value) {
                                 candidates.push({ ticker, rs: day.relativeStrength, dayData: day });
                             }
@@ -648,11 +653,11 @@
                             });
 
                             cash -= capitalPerTrade;
-                            console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with $${capitalPerTrade.toFixed(2)}`, 'color: green');
+                            console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with ${capitalPerTrade.toFixed(2)}`, 'color: green');
 
                             // Reset counters for the entered stock to prevent immediate re-entry signals
                             daysAboveSMA[ticker] = 0;
-                            daysUnderSMA[ticker] = 0;
+                            daysUnderEMA[ticker] = 0;
                         });
                     }
                 }
@@ -671,7 +676,7 @@
                         trade.exitDate = lastDayData.date; // Show the last date as the 'exit'
                         trade.exitPrice = lastDayData.close;
                         trade.exitAmount = 'Open'; // This is the special flag
-                        trade.warn = lastDayData.close <= lastDayData.smaExit // this is already 1 day below SMA to exit
+                        trade.warn = lastDayData.close <= lastDayData.emaExit // this is already 1 day below SMA to exit
                         trade.result = currentValue - trade.entryAmount;
                         trade.resultPercentage = (trade.result / trade.entryAmount) * 100;
                     }
@@ -690,7 +695,7 @@
             const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
             const finalPnlColor = totalReturn >= 0 ? 'text-green-500' : 'text-red-500';
 
-            totalReturnEl.innerHTML = `<span class="${finalPnlColor}">$${totalReturn.toFixed(2)}</span>`;
+            totalReturnEl.innerHTML = `<span class="${finalPnlColor}">${totalReturn.toFixed(2)}</span>`;
             winRateEl.textContent = `${winRate.toFixed(2)}% (${winningTrades.length}/${trades.length})`;
             totalTradesEl.textContent = trades.length;
 
@@ -768,15 +773,16 @@
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
                 const investmentAmount = parseFloat(investmentAmountInput.value);
-                const smaPeriodEntry = parseInt(smaPeriodEntryInput.value);
-                const smaPeriodExit = parseInt(smaPeriodExitInput.value);
+                const smaPeriodEntry1 = parseInt(smaPeriodEntry1Input.value);
+                const smaPeriodEntry2 = parseInt(smaPeriodEntry2Input.value);
+                const emaPeriodExit = parseInt(emaPeriodExitInput.value);
                 const daysAboveSMA = parseInt(daysAboveSMAInput.value);
-                const daysUnderSMA = parseInt(daysUnderSMAInput.value);
+                const daysUnderEMA = parseInt(daysUnderEMAInput.value);
                 const rsPeriod = parseInt(rsPeriodInput.value);
                 const numberOfStocks = parseInt(numberOfStocksInput.value);
 
                 // To ensure indicators are "warmed up", fetch data from before the start date.
-                const lookbackDays = Math.max(smaPeriodEntry, smaPeriodExit, rsPeriod) + 10; // Add a small buffer
+                const lookbackDays = Math.max(smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod) + 10; // Add a small buffer
                 const fetchStartDateObj = new Date(startDate);
                 // A simple approach is to subtract calendar days. A factor of 1.5 helps account for weekends/holidays.
                 fetchStartDateObj.setDate(fetchStartDateObj.getDate() - Math.round(lookbackDays * 1.5));
@@ -796,7 +802,7 @@
                     const ticker = tickers[index];
                     if (data && data.length > 0) {
                         const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
-                        allData[ticker] = calculateIndicators(sortedData, smaPeriodEntry, smaPeriodExit, rsPeriod);
+                        allData[ticker] = calculateIndicators(sortedData, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod);
                     } else {
                         console.warn(`No data returned for ticker: ${ticker}`);
                     }
@@ -816,7 +822,7 @@
                     .sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
-                const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderSMA, numberOfStocks);
+                const trades = runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderEMA, numberOfStocks);
 
                 // Display the results
                 displayResults(trades);
