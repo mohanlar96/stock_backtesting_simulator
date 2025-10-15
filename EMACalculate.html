@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>With SMA Back testing Tool</title>
+    <title>With EMA Back testing Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -381,7 +381,13 @@
 
         // Calculation of indicators (SMA, RSI, Bollinger Bands)
         const calculateIndicators = (data, smaPeriodEntry, smaPeriodExit, rsPeriod) => {
-            const newData = data.map((d, i) => {
+            const newData = [];
+            const ema9Period = 9;
+            const multiplier = 2 / (ema9Period + 1);
+            let ema9 = null;
+
+            for (let i = 0; i < data.length; i++) {
+                const d = data[i];
                 // SMA Calculation for Entry
                 const smaEntry = i >= smaPeriodEntry - 1 ?
                     data.slice(i - smaPeriodEntry + 1, i + 1).reduce((sum, item) => sum + item.close, 0) / smaPeriodEntry :
@@ -401,6 +407,16 @@
                     }
                 }
 
+                if (i === ema9Period - 1) {
+                    let sum = 0;
+                    for (let j = 0; j < ema9Period; j++) {
+                        sum += data[j].close;
+                    }
+                    ema9 = sum / ema9Period;
+                } else if (i > ema9Period - 1) {
+                    ema9 = (data[i].close - ema9) * multiplier + ema9;
+                }
+
                 const avgVolumePeriod = avgVolumePeriodInput.value;
 
                 let lastXDaysVolume = i >= avgVolumePeriod - 1
@@ -409,17 +425,18 @@
                         .reduce((sum, item) => sum + item.volume, 0) / avgVolumePeriod
                     : null;
 
-                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close, lastXDaysVolume)
+                console.log(d.symbol, d.date, smaEntry, smaExit, relativeStrength, d.close, lastXDaysVolume, ema9)
 
 
-                return {
+                newData.push({
                     ...d,
                     smaEntry,
                     smaExit,
                     relativeStrength,
                     lastXDaysVolume,
-                };
-            });
+                    ema9,
+                });
+            }
             return newData;
         };
 
@@ -530,7 +547,7 @@
                     if (day) {
                         // Update entry counter based on entry SMA
                         if (day.smaEntry) {
-                            if (day.close >= day.smaEntry && day.close >= day.smaExit) {
+                            if (day.close >= day.smaEntry && day.close >= day.smaExit && day.close >= day.ema9) {
                                 daysAboveSMA[ticker]++;
                             } else {
                                 daysAboveSMA[ticker] = 0;
@@ -538,7 +555,7 @@
                         }
                         // Update exit counter based on exit SMA
                         if (day.smaExit) {
-                            if (day.close < day.smaExit) {
+                            if (day.close < day.ema9) {
                                 daysUnderSMA[ticker]++;
                             } else {
                                 daysUnderSMA[ticker] = 0;
