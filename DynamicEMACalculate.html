@@ -267,7 +267,7 @@
         </div>
 
         <div id="results" class="hidden">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-center">
                 <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
                     <p class="text-xl font-bold" id="total-return">-</p>
                     <p class="text-xs text-slate-400">Total Return</p>
@@ -279,6 +279,10 @@
                 <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
                     <p class="text-xl font-bold" id="total-trades">-</p>
                     <p class="text-xs text-slate-400">Total Trades</p>
+                </div>
+                <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
+                    <p class="text-xl font-bold" id="qqq-status">-</p>
+                    <p class="text-xs text-slate-400">QQQ Market Status</p>
                 </div>
             </div>
 
@@ -332,6 +336,8 @@
         const winRateEl = document.getElementById('win-rate');
         const totalTradesEl = document.getElementById('total-trades');
         const tradeLogBody = document.getElementById('tradeLog');
+        const qqqStatusEl = document.getElementById('qqq-status');
+
 
         const selectedTickersDiv = document.getElementById('selectedTickers');
         const avgVolumePeriodInput = document.getElementById('avgVolumePeriod')
@@ -365,8 +371,8 @@
         topXInput.onchange = changeInput
 
         // Set default dates
-        startDateInput.value = '2023-01-01';
-        endDateInput.value = '2025-12-01';
+        startDateInput.value = '2022-01-01';
+        endDateInput.value = '2025-12-31';
 
         // Function to handle fetching historical data in one call
         const fetchHistoricalData = async (ticker, startDate, endDate, apiKey) => {
@@ -407,6 +413,47 @@
             } else {
                 throw new Error('No historical data found for this ticker and date range. The API may have limitations on data or your key may not support the date range. Please try another ticker or a shorter date range.');
             }
+        };
+
+        /**   const checkQQQBearMarket = (date, qqqData) => {
+               const dataUptoDate = qqqData.filter(d => d.date <= date);
+               if (dataUptoDate.length > 200) {
+                   const sortedData = dataUptoDate; // Already sorted
+                   const lastDay = sortedData[sortedData.length - 1];
+                   const sma50 = sortedData.slice(sortedData.length - 50).reduce((sum, item) => sum + item.close, 0) / 50;
+                   const sma200 = sortedData.slice(sortedData.length - 200).reduce((sum, item) => sum + item.close, 0) / 200;
+   
+                   if (lastDay.close < sma50 || lastDay.close < sma200 || sma50 < sma200) {
+                       return true; // Bear market
+                   }
+               }
+               return false; // Not a bear market
+           }; **/
+
+        const checkQQQBearMarket = (date, qqqData) => {
+            const dataUptoDate = qqqData.filter(d => d.date <= date);
+            if (dataUptoDate.length < 252) return false;
+
+            const lastDay = dataUptoDate[dataUptoDate.length - 1];
+
+            // Method 1: Check for 20% drawdown from 52-week high
+            const last252Days = dataUptoDate.slice(-252);
+            const fiftyTwoWeekHigh = Math.max(...last252Days.map(d => d.close));
+            const drawdownPercent = ((lastDay.close - fiftyTwoWeekHigh) / fiftyTwoWeekHigh) * 100;
+            const significantDrawdown = drawdownPercent <= -20;
+
+            // Method 2: Death cross (SMA50 < SMA200)
+            const sma50 = dataUptoDate.slice(-50).reduce((sum, d) => sum + d.close, 0) / 50;
+            const sma200 = dataUptoDate.slice(-200).reduce((sum, d) => sum + d.close, 0) / 200;
+            const deathCross = sma50 < sma200;
+
+            // Method 3: Price below 200-day SMA
+            const priceBelow200 = lastDay.close < sma200;
+
+            // Bear market if EITHER:
+            // 1. 20% drawdown (definitive bear market)
+            // 2. Death cross AND price below 200 SMA (trend-based bear signal)
+            return significantDrawdown || (deathCross && priceBelow200);
         };
 
         // Calculation of indicators (SMA, RSI, Bollinger Bands)
@@ -540,7 +587,7 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = async (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderEMAForExit, numberOfStocks, apiKey, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate) => {
+        const runStrategy = async (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderEMAForExit, numberOfStocks, apiKey, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, qqqData) => {
             let positions = []; // Array of active positions { ticker, shares, tradeLogIndex }
             let trades = [];
             let cash = investmentAmount;
@@ -560,6 +607,14 @@
 
             for (const date of masterDateList) {
 
+                const isBearMarket = checkQQQBearMarket(date, qqqData);
+                if (isBearMarket) {
+                    qqqStatusEl.innerHTML = `<span class="text-red-500">QQQ Bear Market: HOLD</span>`;
+                    console.log(`%cQQQ Bear Market on ${date}. Holding.`, 'color: orange');
+                } else {
+                    qqqStatusEl.innerHTML = `<span class="text-green-500">QQQ Bull Market: BUY</span>`;
+                }
+
                 const year = new Date(date).getFullYear();
                 if (year > currentYear) {
                     console.log(`Year changed to ${year}. Fetching new tickers...`);
@@ -569,7 +624,7 @@
 
                     if (tickersToFetch.length > 0) {
                         console.log("Fetching data for new tickers:", tickersToFetch);
-                        const lookbackDays = Math.max(smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod) + 10;
+                        const lookbackDays = Math.max(smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, 252) + 10;
                         const fetchStartDateObj = new Date(date);
                         fetchStartDateObj.setDate(fetchStartDateObj.getDate() - Math.round(lookbackDays * 1.5));
                         const fetchStartDate = fetchStartDateObj.toISOString().split('T')[0];
@@ -649,60 +704,62 @@
                 }
 
                 // --- B. LOOK FOR NEW ENTRIES ---
-                const openSlots = numberOfStocks - positions.length;
-                // Do not look for new entries on the last day of the simulation.
-                if (openSlots > 0 && cash > 1 && date !== masterDateList[masterDateList.length - 1]) {
-                    let candidates = [];
-                    const activeTickers = positions.map(p => p.ticker);
+                if (!isBearMarket) {
+                    const openSlots = numberOfStocks - positions.length;
+                    // Do not look for new entries on the last day of the simulation.
+                    if (openSlots > 0 && cash > 1 && date !== masterDateList[masterDateList.length - 1]) {
+                        let candidates = [];
+                        const activeTickers = positions.map(p => p.ticker);
 
-                    currentTickers.forEach(ticker => {
-                        if (activeTickers.includes(ticker)) return; // Already in this stock
+                        currentTickers.forEach(ticker => {
+                            if (activeTickers.includes(ticker)) return; // Already in this stock
 
-                        const day = allData[ticker]?.find(d => d.date === date);
-                        if (day && day.smaEntry1 && day.smaEntry2 && day.relativeStrength && day.lastXDaysVolume) {
-                            if (daysAboveSMA[ticker] >= daysAboveSMAForEntry && day.volume >= day.lastXDaysVolume * volumeMultiplierInput.value) {
-                                candidates.push({ ticker, rs: day.relativeStrength, dayData: day });
+                            const day = allData[ticker]?.find(d => d.date === date);
+                            if (day && day.smaEntry1 && day.smaEntry2 && day.relativeStrength && day.lastXDaysVolume) {
+                                if (daysAboveSMA[ticker] >= daysAboveSMAForEntry && day.volume >= day.lastXDaysVolume * volumeMultiplierInput.value) {
+                                    candidates.push({ ticker, rs: day.relativeStrength, dayData: day });
+                                }
                             }
-                        }
-                    });
-
-                    if (candidates.length > 0) {
-                        if (rsSortOrderInput.value === "ASC") {
-                            candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
-                        } else if (rsSortOrderInput.value === "DESC") {
-                            candidates.sort((a, b) => b.rs - a.rs); // Sort by RS DESCENDING
-                        }
-                        console.log('Sorted candidates for Entry ', rsSortOrderInput.value, date, candidates)
-
-                        const tradesToEnter = candidates.slice(0, openSlots);
-                        const capitalPerTrade = openSlots > 0 ? cash / openSlots : 0; // Distribute available cash based on open slots
-
-                        tradesToEnter.forEach(candidate => {
-                            const { ticker, dayData } = candidate;
-                            const shares = capitalPerTrade / dayData.close;
-
-                            positions.push({ ticker: ticker, shares: shares, tradeLogIndex: trades.length });
-
-                            trades.push({
-                                ticker: ticker,
-                                entryDate: dayData.date,
-                                entryPrice: dayData.close,
-                                entryAmount: capitalPerTrade,
-                                exitAmount: null,
-                                shares: shares,
-                                exitDate: null,
-                                exitPrice: null,
-                                result: null,
-                                resultPercentage: null
-                            });
-
-                            cash -= capitalPerTrade;
-                            console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with ${capitalPerTrade.toFixed(2)}`, 'color: green');
-
-                            // Reset counters for the entered stock to prevent immediate re-entry signals
-                            daysAboveSMA[ticker] = 0;
-                            daysUnderEMA[ticker] = 0;
                         });
+
+                        if (candidates.length > 0) {
+                            if (rsSortOrderInput.value === "ASC") {
+                                candidates.sort((a, b) => a.rs - b.rs); // Sort by RS ASCENDING
+                            } else if (rsSortOrderInput.value === "DESC") {
+                                candidates.sort((a, b) => b.rs - a.rs); // Sort by RS DESCENDING
+                            }
+                            console.log('Sorted candidates for Entry ', rsSortOrderInput.value, date, candidates)
+
+                            const tradesToEnter = candidates.slice(0, openSlots);
+                            const capitalPerTrade = openSlots > 0 ? cash / openSlots : 0; // Distribute available cash based on open slots
+
+                            tradesToEnter.forEach(candidate => {
+                                const { ticker, dayData } = candidate;
+                                const shares = capitalPerTrade / dayData.close;
+
+                                positions.push({ ticker: ticker, shares: shares, tradeLogIndex: trades.length });
+
+                                trades.push({
+                                    ticker: ticker,
+                                    entryDate: dayData.date,
+                                    entryPrice: dayData.close,
+                                    entryAmount: capitalPerTrade,
+                                    exitAmount: null,
+                                    shares: shares,
+                                    exitDate: null,
+                                    exitPrice: null,
+                                    result: null,
+                                    resultPercentage: null
+                                });
+
+                                cash -= capitalPerTrade;
+                                console.log(`%cTrade Entered ${ticker} on ${dayData.date} at ${dayData.close} with ${capitalPerTrade.toFixed(2)}`, 'color: green');
+
+                                // Reset counters for the entered stock to prevent immediate re-entry signals
+                                daysAboveSMA[ticker] = 0;
+                                daysUnderEMA[ticker] = 0;
+                            });
+                        }
                     }
                 }
             }
@@ -780,13 +837,13 @@
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300 font-bold">${trade.ticker}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryDate}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${idleDaysText}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryPrice.toFixed(2)}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">$${trade.entryAmount.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryPrice.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.entryAmount.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitDate ?? 'N/A'}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? '$' + trade.exitPrice.toFixed(2) : 'N/A'}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount === 'Open' ? `<span class="${openClassName}">Open</span>` : (trade.exitAmount ? '$' + trade.exitAmount.toFixed(2) : 'N/A')}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitPrice ? + trade.exitPrice.toFixed(2) : 'N/A'}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${trade.exitAmount === 'Open' ? `<span class="${openClassName}">Open</span>` : (trade.exitAmount ? + trade.exitAmount.toFixed(2) : 'N/A')}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm text-slate-300">${holdDaysText}</td>
-            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${'$' + trade.result.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${+ trade.result.toFixed(2)}</td>
             <td class="px-2 py-2 whitespace-nowrap text-sm font-medium ${pnlColor}">${trade.resultPercentage.toFixed(2) + '%'}</td>
         `;
                 tradeLogBody.appendChild(row);
@@ -838,6 +895,9 @@
                     throw new Error('Please enter a valid API key in the input field above.');
                 }
 
+                const qqqData = await fetchHistoricalData('QQQ', fetchStartDate, endDate, API_KEY);
+                const sortedQqqData = qqqData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
                 const allData = {};
                 const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, fetchStartDate, endDate, API_KEY));
                 const results = await Promise.all(dataPromises);
@@ -866,7 +926,7 @@
                     .sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
-                const trades = await runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderEMA, numberOfStocks, API_KEY, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate);
+                const trades = await runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderEMA, numberOfStocks, API_KEY, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, sortedQqqData);
 
                 // Display the results
                 displayResults(trades);
