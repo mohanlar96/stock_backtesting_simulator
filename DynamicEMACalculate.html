@@ -180,12 +180,17 @@
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
                     </div>
-                    <div class="space-y-1 col-span-2">
+                    <div class="space-y-1">
                         <label for="daysAboveSMA" class="block text-sm font-medium text-slate-300">Days Above Both
                             SMAs</label>
                         <input type="number" id="daysAboveSMA" value="2"
                             class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                             min="1">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="marketTicker" class="block text-sm font-medium text-slate-300">Whole Market Ticker</label>
+                        <input type="text" id="marketTicker" value="QQQ"
+                            class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm">
                     </div>
                 </div>
             </div>
@@ -281,8 +286,8 @@
                     <p class="text-xs text-slate-400">Total Trades</p>
                 </div>
                 <div class="rounded-md bg-slate-800/50 p-4 shadow-md">
-                    <p class="text-xl font-bold" id="qqq-status">-</p>
-                    <p class="text-xs text-slate-400">QQQ Market Status</p>
+                    <p class="text-xl font-bold" id="market-status">-</p>
+                    <p class="text-xs text-slate-400" id="market-status-label">Market Status</p>
                 </div>
             </div>
 
@@ -336,8 +341,8 @@
         const winRateEl = document.getElementById('win-rate');
         const totalTradesEl = document.getElementById('total-trades');
         const tradeLogBody = document.getElementById('tradeLog');
-        const qqqStatusEl = document.getElementById('qqq-status');
-
+        const marketStatusEl = document.getElementById('market-status');
+        const marketTickerInput = document.getElementById('marketTicker');
 
         const selectedTickersDiv = document.getElementById('selectedTickers');
         const avgVolumePeriodInput = document.getElementById('avgVolumePeriod')
@@ -415,23 +420,9 @@
             }
         };
 
-        /**   const checkQQQBearMarket = (date, qqqData) => {
-               const dataUptoDate = qqqData.filter(d => d.date <= date);
-               if (dataUptoDate.length > 200) {
-                   const sortedData = dataUptoDate; // Already sorted
-                   const lastDay = sortedData[sortedData.length - 1];
-                   const sma50 = sortedData.slice(sortedData.length - 50).reduce((sum, item) => sum + item.close, 0) / 50;
-                   const sma200 = sortedData.slice(sortedData.length - 200).reduce((sum, item) => sum + item.close, 0) / 200;
-   
-                   if (lastDay.close < sma50 || lastDay.close < sma200 || sma50 < sma200) {
-                       return true; // Bear market
-                   }
-               }
-               return false; // Not a bear market
-           }; **/
 
-        const checkQQQBearMarket = (date, qqqData) => {
-            const dataUptoDate = qqqData.filter(d => d.date <= date);
+        const checkBearMarket = (date, marKetData) => {
+            const dataUptoDate = marKetData.filter(d => d.date <= date);
             if (dataUptoDate.length < 252) return false;
 
             const lastDay = dataUptoDate[dataUptoDate.length - 1];
@@ -587,7 +578,8 @@
         };
 
         // Backtesting Strategy Logic
-        const runStrategy = async (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderEMAForExit, numberOfStocks, apiKey, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, qqqData) => {
+        const runStrategy = async (allData, masterDateList, tickers, investmentAmount, daysAboveSMAForEntry, daysUnderEMAForExit, numberOfStocks, apiKey, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, marKetData) => {
+            let marketSymbol = marketTickerInput.value;
             let positions = []; // Array of active positions { ticker, shares, tradeLogIndex }
             let trades = [];
             let cash = investmentAmount;
@@ -607,12 +599,12 @@
 
             for (const date of masterDateList) {
 
-                const isBearMarket = checkQQQBearMarket(date, qqqData);
+                const isBearMarket = checkBearMarket(date, marKetData);
                 if (isBearMarket) {
-                    qqqStatusEl.innerHTML = `<span class="text-red-500">QQQ Bear Market: HOLD</span>`;
-                    console.log(`%cQQQ Bear Market on ${date}. Holding.`, 'color: orange');
+                    marketStatusEl.innerHTML = `<span class="text-red-500">${marketSymbol} Bear Market: HOLD</span>`;
+                    console.log(`%c${marketSymbol} Bear Market on ${date}. Holding.`, 'color: orange');
                 } else {
-                    qqqStatusEl.innerHTML = `<span class="text-green-500">QQQ Bull Market: BUY</span>`;
+                    marketStatusEl.innerHTML = `<span class="text-green-500">${marketSymbol} Bull Market: BUY</span>`;
                 }
 
                 const year = new Date(date).getFullYear();
@@ -895,8 +887,8 @@
                     throw new Error('Please enter a valid API key in the input field above.');
                 }
 
-                const qqqData = await fetchHistoricalData('QQQ', fetchStartDate, endDate, API_KEY);
-                const sortedQqqData = qqqData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const marKetData = await fetchHistoricalData(marketTickerInput.value, fetchStartDate, endDate, API_KEY);
+                const sortedMarketData = marKetData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 const allData = {};
                 const dataPromises = tickers.map(ticker => fetchHistoricalData(ticker, fetchStartDate, endDate, API_KEY));
@@ -926,7 +918,7 @@
                     .sort((a, b) => new Date(a) - new Date(b));
 
                 // Run the backtest strategy
-                const trades = await runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderEMA, numberOfStocks, API_KEY, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, sortedQqqData);
+                const trades = await runStrategy(allData, masterDateList, Object.keys(allData), investmentAmount, daysAboveSMA, daysUnderEMA, numberOfStocks, API_KEY, smaPeriodEntry1, smaPeriodEntry2, emaPeriodExit, rsPeriod, endDate, sortedMarketData);
 
                 // Display the results
                 displayResults(trades);
