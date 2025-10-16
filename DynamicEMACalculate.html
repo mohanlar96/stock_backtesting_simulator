@@ -121,6 +121,13 @@
                     class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
                     placeholder="Enter your API key here" required>
             </div>
+              <div class="col-span-full space-y-1">
+                <label for="topX" class="block text-sm font-medium text-slate-300">Auto Update Top X Companies <span
+                        class="text-xs text-red-400 font-normal">( support for top 15 )</span></label>
+                <input type="text" id="topX" value="10"
+                    class="w-full rounded-md border-0 bg-slate-800/50 text-white shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 text-sm"
+                    placeholder="Enter your API key here" required>
+            </div>
             <div class="col-span-full space-y-1">
                 <label for="tickerSearch" class="block text-sm font-medium text-slate-300">Search & Add Tickers</label>
                 <div class="relative">
@@ -313,6 +320,7 @@
         // DOM elements
         const runBacktestButton = document.getElementById('runBacktestButton');
         const apiKeyInput = document.getElementById('apiKey');
+        const topXInput = document.getElementById('topX');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         const investmentAmountInput = document.getElementById('investmentAmount');
@@ -341,7 +349,6 @@
             if (savedApiKey) {
                 apiKeyInput.value = savedApiKey;
             }
-            setupTickerSearch();
             const e = new Event('change');
             startDateInput.dispatchEvent(e);
 
@@ -351,8 +358,8 @@
             selectedTickersDiv.innerHTML = '';
         }
 
-        startDateInput.onchange = (e) => {
-            const dateStr = startDateInput.value; // e.g., "1995-01-01"
+        const changeInput = (e) => {
+            const dateStr = startDateInput.value;
             const year = parseInt(dateStr.split('-')[0]);
             console.log('startDate Change', startDateInput.value, year);
             if(year && year.toString().length ===4 ){
@@ -360,6 +367,9 @@
                 initializeTickerInput(year);
             }
         }
+
+        startDateInput.onchange = changeInput
+        topXInput.onchange = changeInput
 
         // Set default dates
         startDateInput.value = '2023-01-01';
@@ -527,7 +537,7 @@
             }
         };
 
-        const fetchTopXTickers = (year, x = 15) => {
+        const fetchTopXTickers = (year, x = parseInt(topXInput.value)) => {
             if (!year || isNaN(year)) {
                 year = new Date().getFullYear(); // Default to current year if year is invalid
             }
