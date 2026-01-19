@@ -377,7 +377,7 @@
 
         // Set default dates
         startDateInput.value = '2024-01-01';
-        endDateInput.value = '2025-12-31';
+        endDateInput.value = '2026-12-31';
 
         // Function to handle fetching historical data in one call
         const fetchHistoricalData = async (ticker, startDate, endDate, apiKey) => {
@@ -534,6 +534,7 @@
             }
             console.log(`Fetching static tickers for year: ${year}`);
             const yearlyTickers = {
+                2026: ["NVDA", "GOOGL", "AAPL", "MSFT", "AMZN", "AVGO", "META", "TSLA", "TSM", "BRK.B", "LLY", "WMT", "JPM", "TCEHY", "SSNLF"],
                 2025: ['NVDA', 'MSFT', 'AAPL', 'GOOG', 'AMZN', 'META', 'LLY', 'BRK-B', 'AVGO', 'TSLA', 'V', 'JPM', 'UNH', 'XOM', 'HD'],
                 2024: ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'BRK-B', 'LLY', 'TSLA', 'V', 'JPM', 'UNH', 'XOM', 'WMT', 'AVGO'],
                 2023: ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'BRK-B', 'UNH', 'NVDA', 'TSLA', 'JNJ', 'XOM', 'V', 'JPM', 'META', 'PG', 'LLY'],
